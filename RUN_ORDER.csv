@@ -1,0 +1,37 @@
+order,session,family,target,experiment,methods,seeds,standalone_script,time_policy
+1,C01A,CNN,table_03,DTD/ResNet50/100ep part 1 of 2,"linear,bitfit,ssf,dt1d,residual","0,1,2",cnn/C01A_table_03.sh,710m hard cap + resumable ZIP
+2,C01B,CNN,table_03,DTD/ResNet50/100ep part 2 of 2,"conv_r8,conv_r6,conv_r4,conv_r2,full","0,1,2",cnn/C01B_table_03.sh,710m hard cap + resumable ZIP
+3,C02,CNN,table_04,Flowers102/ResNet50/100ep,"linear,bitfit,ssf,dt1d,residual,conv_r8,conv_r6,conv_r4,conv_r2,full","0,1,2",cnn/C02_table_04.sh,710m hard cap + resumable ZIP
+4,C03,CNN,table_05,Flowers102/ResNet18/10ep,"linear,bitfit,ssf,dt1d,conv_r8,conv_r6,conv_r4,conv_r2,full","0,1,2",cnn/C03_table_05.sh,710m hard cap + resumable ZIP
+5,C04,CNN,table_06,Flowers102/ResNet18/100ep/BS64,"linear,bitfit,ssf,dt1d,conv_r8,conv_r6,conv_r4,conv_r2,full","0,1,2",cnn/C04_table_06.sh,710m hard cap + resumable ZIP
+6,C05,CNN,table_07,Flowers102/ResNet18/100ep/BS32,"linear,bitfit,ssf,dt1d,conv_r8,conv_r6,conv_r4,conv_r2,full","0,1,2",cnn/C05_table_07.sh,710m hard cap + resumable ZIP
+7,C06A,CNN,table_08,SVHN/ResNet50/10ep part 1 of 2,"linear,bitfit,ssf,dt1d,full","0,1,2",cnn/C06A_table_08.sh,710m hard cap + resumable ZIP
+8,C06B,CNN,table_08,SVHN/ResNet50/10ep part 2 of 2,"conv_r8,conv_r6,conv_r4,conv_r2","0,1,2",cnn/C06B_table_08.sh,710m hard cap + resumable ZIP
+9,C07,CNN,table_09,Oxford-IIIT Pet/ResNet50/10ep,"linear,bitfit,ssf,dt1d,conv_r8,conv_r6,conv_r4,conv_r2,full","0,1,2",cnn/C07_table_09.sh,710m hard cap + resumable ZIP
+10,C08A,CNN,table_10,Food101/ResNet18/10ep part 1 of 2,"linear,bitfit,ssf,dt1d,full","0,1,2",cnn/C08A_table_10.sh,710m hard cap + resumable ZIP
+11,C08B,CNN,table_10,Food101/ResNet18/10ep part 2 of 2,"conv_r8,conv_r6,conv_r4,conv_r2","0,1,2",cnn/C08B_table_10.sh,710m hard cap + resumable ZIP
+12,C09A,CNN,table_11,Food101/EfficientNet-B0/10ep part 1 of 2,"linear,bitfit,ssf,dt1d,full","0,1,2",cnn/C09A_table_11.sh,710m hard cap + resumable ZIP
+13,C09B,CNN,table_11,Food101/EfficientNet-B0/10ep part 2 of 2,"conv_r8,conv_r6,conv_r4,conv_r2","0,1,2",cnn/C09B_table_11.sh,710m hard cap + resumable ZIP
+14,C10,CNN,table_12,Oxford-IIIT Pet/EfficientNet-B0/10ep,"linear,bitfit,ssf,dt1d,conv_r8,conv_r6,conv_r4,conv_r2,full","0,1,2",cnn/C10_table_12.sh,710m hard cap + resumable ZIP
+15,C11,CNN,table_13,Oxford-IIIT Pet/EfficientNet-B0/100ep,"linear,bitfit,ssf,dt1d,conv_r8,conv_r6,conv_r4,conv_r2,full","0,1,2",cnn/C11_table_13.sh,710m hard cap + resumable ZIP
+16,C12,CNN,table_14_15,Caltech101/ResNet18/10ep accuracy+efficiency,"linear,bitfit,ssf,dt1d,bam,lora_conv,residual,sidetune,conv_r4,full","0,1,2",cnn/C12_table_14_15.sh,710m hard cap + resumable ZIP
+17,C13,CNN,table_18_19,EuroSAT/MobileNetV3-Small/25ep,"linear,dt1d,bam,conv_r4,full","0,1,2",cnn/C13_table_18_19.sh,710m hard cap + resumable ZIP
+18,F01,CNN,figure_01,"Figure 1 representative convergence, seed 0 only",dt1d,0,cnn/F01_figure_01.sh,710m hard cap + resumable ZIP
+19,F04,CNN,figure_04,"Figure 4 representative trade-off, seed 0 only","linear,bitfit,ssf,dt1d,bam,lora_conv,residual,sidetune,conv_r4,full",0,cnn/F04_figure_04.sh,710m hard cap + resumable ZIP
+20,A01,CNN,ablation_dtd_resnet18,Reviewer component ablation DTD/ResNet18,"dt1d,previous_plain_axial,dt1d_no_weighted_shift,dt1d_no_l1_projection,routing_reference,direct_symmetric,unshared_coefficients,height_only,fixed_average_routing,single_dilation,gate_off,pointwise_on","0,1,2",cnn/A01_ablation_dtd_resnet18.sh,710m hard cap + resumable ZIP
+21,A02,CNN,ablation_flowers102_resnet50,Reviewer component ablation Flowers102/ResNet50,"dt1d,previous_plain_axial,dt1d_no_weighted_shift,dt1d_no_l1_projection,routing_reference,direct_symmetric,unshared_coefficients,height_only,fixed_average_routing,single_dilation,gate_off,pointwise_on","0,1,2",cnn/A02_ablation_flowers102_resnet50.sh,710m hard cap + resumable ZIP
+22,D01A,Dense,binary_vit_drive,DRIVE binary ViT dense part 1 of 2,"linear,dt1d","0,1,2",dense/D01A_binary_vit_drive.sh,710m hard cap + resumable ZIP
+23,D01B,Dense,binary_vit_drive,DRIVE binary ViT dense part 2 of 2,"bitfit,full","0,1,2",dense/D01B_binary_vit_drive.sh,710m hard cap + resumable ZIP
+24,D02A,Dense,binary_deeplab_drive,DRIVE DeepLab part 1 of 2,"linear,bitfit,ssf,dt1d,full","0,1,2",dense/D02A_binary_deeplab_drive.sh,710m hard cap + resumable ZIP
+25,D02B,Dense,binary_deeplab_drive,DRIVE DeepLab part 2 of 2,"bam,lora_conv,residual_adapter,conv_adapter","0,1,2",dense/D02B_binary_deeplab_drive.sh,710m hard cap + resumable ZIP
+26,D03,Dense,semantic_pet_deeplab,Oxford-IIIT Pet semantic segmentation DeepLab,"linear,dt1d,bam,conv_adapter,full","0,1,2",dense/D03_semantic_pet_deeplab.sh,710m hard cap + resumable ZIP
+27,D04A,Dense,binary_vit_pennfudan,PennFudan binary ViT dense part 1 of 2,"linear,dt1d","0,1,2",dense/D04A_binary_vit_pennfudan.sh,710m hard cap + resumable ZIP
+28,D04B,Dense,binary_vit_pennfudan,PennFudan binary ViT dense part 2 of 2,"bitfit,full","0,1,2",dense/D04B_binary_vit_pennfudan.sh,710m hard cap + resumable ZIP
+29,D05A,Dense,binary_deeplab_pennfudan,PennFudan DeepLab part 1 of 2,"linear,bitfit,ssf,dt1d,full","0,1,2",dense/D05A_binary_deeplab_pennfudan.sh,710m hard cap + resumable ZIP
+30,D05B,Dense,binary_deeplab_pennfudan,PennFudan DeepLab part 2 of 2,"bam,lora_conv,residual_adapter,conv_adapter","0,1,2",dense/D05B_binary_deeplab_pennfudan.sh,710m hard cap + resumable ZIP
+31,D06,Dense,detection_pet_fasterrcnn,Oxford-IIIT Pet Faster R-CNN feasibility,"head_only,dt1d,bam,conv_adapter,full","0,1,2",dense/D06_detection_pet_fasterrcnn.sh,710m hard cap + resumable ZIP
+32,V01,ViT,vtab-dtd,NEW result: VTAB-DTD / ViT-B16 / BS32,"dt1d,vpt,pfeiffer,full,linear","tune42 -> 0,1,2",vit/V01_vtab_dtd_bs32.sh,710m hard cap + resumable ZIP
+33,V02,ViT,vtab-eurosat,NEW result: VTAB-EuroSAT / ViT-B16 / BS32,"dt1d,vpt,pfeiffer,full,linear","tune42 -> 0,1,2",vit/V02_vtab_eurosat_bs32.sh,710m hard cap + resumable ZIP
+34,V03,ViT,flowers102,Manuscript ViT result: Flowers102 / ViT-B16 / BS16,"dt1d,vpt,pfeiffer,full,linear","tune42 -> 0,1,2",vit/V03_flowers102_bs16.sh,710m hard cap + resumable ZIP
+35,V04,ViT,flowers102,Manuscript ViT result: Flowers102 / ViT-B16 / BS32,"dt1d,vpt,pfeiffer,full,linear","tune42 -> 0,1,2",vit/V04_flowers102_bs32.sh,710m hard cap + resumable ZIP
+36,V05,ViT,vtab-caltech101,Manuscript ViT result: VTAB-Caltech101 / ViT-B16 / BS32,"dt1d,vpt,pfeiffer,full,linear","tune42 -> 0,1,2",vit/V05_vtab_caltech101_bs32.sh,710m hard cap + resumable ZIP

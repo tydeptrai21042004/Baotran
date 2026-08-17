@@ -1,0 +1,1046 @@
+{
+  "version": 5,
+  "cnn_repo": "tydeptrai21042004/whc-dt1d",
+  "vit_repo": "tydeptrai21042004/whc-vit",
+  "cnn_sessions": [
+    {
+      "session": "C01A",
+      "target": "table_03",
+      "methods": [
+        "linear",
+        "bitfit",
+        "ssf",
+        "dt1d",
+        "residual"
+      ],
+      "g0": [
+        "linear",
+        "ssf",
+        "residual"
+      ],
+      "g1": [
+        "bitfit",
+        "dt1d"
+      ],
+      "seeds": [
+        0,
+        1,
+        2
+      ],
+      "kind": "table",
+      "dataset": "dtd",
+      "backbone": "resnet50",
+      "epochs": 100,
+      "batch": 128,
+      "note": "DTD/ResNet50/100ep part 1 of 2"
+    },
+    {
+      "session": "C01B",
+      "target": "table_03",
+      "methods": [
+        "conv_r8",
+        "conv_r6",
+        "conv_r4",
+        "conv_r2",
+        "full"
+      ],
+      "g0": [
+        "conv_r8",
+        "conv_r4",
+        "full"
+      ],
+      "g1": [
+        "conv_r6",
+        "conv_r2"
+      ],
+      "seeds": [
+        0,
+        1,
+        2
+      ],
+      "kind": "table",
+      "dataset": "dtd",
+      "backbone": "resnet50",
+      "epochs": 100,
+      "batch": 128,
+      "note": "DTD/ResNet50/100ep part 2 of 2"
+    },
+    {
+      "session": "C02",
+      "target": "table_04",
+      "methods": [
+        "linear",
+        "bitfit",
+        "ssf",
+        "dt1d",
+        "residual",
+        "conv_r8",
+        "conv_r6",
+        "conv_r4",
+        "conv_r2",
+        "full"
+      ],
+      "g0": [
+        "linear",
+        "ssf",
+        "residual",
+        "conv_r6",
+        "conv_r2"
+      ],
+      "g1": [
+        "bitfit",
+        "dt1d",
+        "conv_r8",
+        "conv_r4",
+        "full"
+      ],
+      "seeds": [
+        0,
+        1,
+        2
+      ],
+      "kind": "table",
+      "dataset": "flowers102",
+      "backbone": "resnet50",
+      "epochs": 100,
+      "batch": 128,
+      "note": "Flowers102/ResNet50/100ep"
+    },
+    {
+      "session": "C03",
+      "target": "table_05",
+      "methods": [
+        "linear",
+        "bitfit",
+        "ssf",
+        "dt1d",
+        "conv_r8",
+        "conv_r6",
+        "conv_r4",
+        "conv_r2",
+        "full"
+      ],
+      "g0": [
+        "linear",
+        "ssf",
+        "conv_r8",
+        "conv_r4",
+        "full"
+      ],
+      "g1": [
+        "bitfit",
+        "dt1d",
+        "conv_r6",
+        "conv_r2"
+      ],
+      "seeds": [
+        0,
+        1,
+        2
+      ],
+      "kind": "table",
+      "dataset": "flowers102",
+      "backbone": "resnet18",
+      "epochs": 10,
+      "batch": 64,
+      "note": "Flowers102/ResNet18/10ep"
+    },
+    {
+      "session": "C04",
+      "target": "table_06",
+      "methods": [
+        "linear",
+        "bitfit",
+        "ssf",
+        "dt1d",
+        "conv_r8",
+        "conv_r6",
+        "conv_r4",
+        "conv_r2",
+        "full"
+      ],
+      "g0": [
+        "linear",
+        "ssf",
+        "conv_r8",
+        "conv_r4",
+        "full"
+      ],
+      "g1": [
+        "bitfit",
+        "dt1d",
+        "conv_r6",
+        "conv_r2"
+      ],
+      "seeds": [
+        0,
+        1,
+        2
+      ],
+      "kind": "table",
+      "dataset": "flowers102",
+      "backbone": "resnet18",
+      "epochs": 100,
+      "batch": 64,
+      "note": "Flowers102/ResNet18/100ep/BS64"
+    },
+    {
+      "session": "C05",
+      "target": "table_07",
+      "methods": [
+        "linear",
+        "bitfit",
+        "ssf",
+        "dt1d",
+        "conv_r8",
+        "conv_r6",
+        "conv_r4",
+        "conv_r2",
+        "full"
+      ],
+      "g0": [
+        "linear",
+        "ssf",
+        "conv_r8",
+        "conv_r4",
+        "full"
+      ],
+      "g1": [
+        "bitfit",
+        "dt1d",
+        "conv_r6",
+        "conv_r2"
+      ],
+      "seeds": [
+        0,
+        1,
+        2
+      ],
+      "kind": "table",
+      "dataset": "flowers102",
+      "backbone": "resnet18",
+      "epochs": 100,
+      "batch": 32,
+      "note": "Flowers102/ResNet18/100ep/BS32"
+    },
+    {
+      "session": "C06A",
+      "target": "table_08",
+      "methods": [
+        "linear",
+        "bitfit",
+        "ssf",
+        "dt1d",
+        "full"
+      ],
+      "g0": [
+        "linear",
+        "ssf",
+        "full"
+      ],
+      "g1": [
+        "bitfit",
+        "dt1d"
+      ],
+      "seeds": [
+        0,
+        1,
+        2
+      ],
+      "kind": "table",
+      "dataset": "svhn",
+      "backbone": "resnet50",
+      "epochs": 10,
+      "batch": 128,
+      "note": "SVHN/ResNet50/10ep part 1 of 2"
+    },
+    {
+      "session": "C06B",
+      "target": "table_08",
+      "methods": [
+        "conv_r8",
+        "conv_r6",
+        "conv_r4",
+        "conv_r2"
+      ],
+      "g0": [
+        "conv_r8",
+        "conv_r4"
+      ],
+      "g1": [
+        "conv_r6",
+        "conv_r2"
+      ],
+      "seeds": [
+        0,
+        1,
+        2
+      ],
+      "kind": "table",
+      "dataset": "svhn",
+      "backbone": "resnet50",
+      "epochs": 10,
+      "batch": 128,
+      "note": "SVHN/ResNet50/10ep part 2 of 2"
+    },
+    {
+      "session": "C07",
+      "target": "table_09",
+      "methods": [
+        "linear",
+        "bitfit",
+        "ssf",
+        "dt1d",
+        "conv_r8",
+        "conv_r6",
+        "conv_r4",
+        "conv_r2",
+        "full"
+      ],
+      "g0": [
+        "linear",
+        "ssf",
+        "conv_r8",
+        "conv_r4",
+        "full"
+      ],
+      "g1": [
+        "bitfit",
+        "dt1d",
+        "conv_r6",
+        "conv_r2"
+      ],
+      "seeds": [
+        0,
+        1,
+        2
+      ],
+      "kind": "table",
+      "dataset": "oxford_iiit_pet",
+      "backbone": "resnet50",
+      "epochs": 10,
+      "batch": 128,
+      "note": "Oxford-IIIT Pet/ResNet50/10ep"
+    },
+    {
+      "session": "C08A",
+      "target": "table_10",
+      "methods": [
+        "linear",
+        "bitfit",
+        "ssf",
+        "dt1d",
+        "full"
+      ],
+      "g0": [
+        "linear",
+        "ssf",
+        "full"
+      ],
+      "g1": [
+        "bitfit",
+        "dt1d"
+      ],
+      "seeds": [
+        0,
+        1,
+        2
+      ],
+      "kind": "table",
+      "dataset": "food101",
+      "backbone": "resnet18",
+      "epochs": 10,
+      "batch": 32,
+      "note": "Food101/ResNet18/10ep part 1 of 2"
+    },
+    {
+      "session": "C08B",
+      "target": "table_10",
+      "methods": [
+        "conv_r8",
+        "conv_r6",
+        "conv_r4",
+        "conv_r2"
+      ],
+      "g0": [
+        "conv_r8",
+        "conv_r4"
+      ],
+      "g1": [
+        "conv_r6",
+        "conv_r2"
+      ],
+      "seeds": [
+        0,
+        1,
+        2
+      ],
+      "kind": "table",
+      "dataset": "food101",
+      "backbone": "resnet18",
+      "epochs": 10,
+      "batch": 32,
+      "note": "Food101/ResNet18/10ep part 2 of 2"
+    },
+    {
+      "session": "C09A",
+      "target": "table_11",
+      "methods": [
+        "linear",
+        "bitfit",
+        "ssf",
+        "dt1d",
+        "full"
+      ],
+      "g0": [
+        "linear",
+        "ssf",
+        "full"
+      ],
+      "g1": [
+        "bitfit",
+        "dt1d"
+      ],
+      "seeds": [
+        0,
+        1,
+        2
+      ],
+      "kind": "table",
+      "dataset": "food101",
+      "backbone": "efficientnet_b0",
+      "epochs": 10,
+      "batch": 64,
+      "note": "Food101/EfficientNet-B0/10ep part 1 of 2"
+    },
+    {
+      "session": "C09B",
+      "target": "table_11",
+      "methods": [
+        "conv_r8",
+        "conv_r6",
+        "conv_r4",
+        "conv_r2"
+      ],
+      "g0": [
+        "conv_r8",
+        "conv_r4"
+      ],
+      "g1": [
+        "conv_r6",
+        "conv_r2"
+      ],
+      "seeds": [
+        0,
+        1,
+        2
+      ],
+      "kind": "table",
+      "dataset": "food101",
+      "backbone": "efficientnet_b0",
+      "epochs": 10,
+      "batch": 64,
+      "note": "Food101/EfficientNet-B0/10ep part 2 of 2"
+    },
+    {
+      "session": "C10",
+      "target": "table_12",
+      "methods": [
+        "linear",
+        "bitfit",
+        "ssf",
+        "dt1d",
+        "conv_r8",
+        "conv_r6",
+        "conv_r4",
+        "conv_r2",
+        "full"
+      ],
+      "g0": [
+        "linear",
+        "ssf",
+        "conv_r8",
+        "conv_r4",
+        "full"
+      ],
+      "g1": [
+        "bitfit",
+        "dt1d",
+        "conv_r6",
+        "conv_r2"
+      ],
+      "seeds": [
+        0,
+        1,
+        2
+      ],
+      "kind": "table",
+      "dataset": "oxford_iiit_pet",
+      "backbone": "efficientnet_b0",
+      "epochs": 10,
+      "batch": 64,
+      "note": "Oxford-IIIT Pet/EfficientNet-B0/10ep"
+    },
+    {
+      "session": "C11",
+      "target": "table_13",
+      "methods": [
+        "linear",
+        "bitfit",
+        "ssf",
+        "dt1d",
+        "conv_r8",
+        "conv_r6",
+        "conv_r4",
+        "conv_r2",
+        "full"
+      ],
+      "g0": [
+        "linear",
+        "ssf",
+        "conv_r8",
+        "conv_r4",
+        "full"
+      ],
+      "g1": [
+        "bitfit",
+        "dt1d",
+        "conv_r6",
+        "conv_r2"
+      ],
+      "seeds": [
+        0,
+        1,
+        2
+      ],
+      "kind": "table",
+      "dataset": "oxford_iiit_pet",
+      "backbone": "efficientnet_b0",
+      "epochs": 100,
+      "batch": 64,
+      "note": "Oxford-IIIT Pet/EfficientNet-B0/100ep"
+    },
+    {
+      "session": "C12",
+      "target": "table_14_15",
+      "methods": [
+        "linear",
+        "bitfit",
+        "ssf",
+        "dt1d",
+        "bam",
+        "lora_conv",
+        "residual",
+        "sidetune",
+        "conv_r4",
+        "full"
+      ],
+      "g0": [
+        "linear",
+        "ssf",
+        "bam",
+        "residual",
+        "conv_r4"
+      ],
+      "g1": [
+        "bitfit",
+        "dt1d",
+        "lora_conv",
+        "sidetune",
+        "full"
+      ],
+      "seeds": [
+        0,
+        1,
+        2
+      ],
+      "kind": "table",
+      "dataset": "caltech101",
+      "backbone": "resnet18",
+      "epochs": 10,
+      "batch": 64,
+      "note": "Caltech101/ResNet18/10ep accuracy+efficiency"
+    },
+    {
+      "session": "C13",
+      "target": "table_18_19",
+      "methods": [
+        "linear",
+        "dt1d",
+        "bam",
+        "conv_r4",
+        "full"
+      ],
+      "g0": [
+        "linear",
+        "bam",
+        "full"
+      ],
+      "g1": [
+        "dt1d",
+        "conv_r4"
+      ],
+      "seeds": [
+        0,
+        1,
+        2
+      ],
+      "kind": "table",
+      "dataset": "eurosat",
+      "backbone": "mobilenet_v3_small",
+      "epochs": 25,
+      "batch": 32,
+      "note": "EuroSAT/MobileNetV3-Small/25ep"
+    },
+    {
+      "session": "F01",
+      "target": "figure_01",
+      "methods": [
+        "dt1d"
+      ],
+      "g0": [
+        "dt1d"
+      ],
+      "g1": [],
+      "seeds": [
+        0
+      ],
+      "kind": "figure",
+      "dataset": "caltech101",
+      "backbone": "resnet18",
+      "epochs": 100,
+      "batch": 64,
+      "note": "Figure 1 representative convergence, seed 0 only"
+    },
+    {
+      "session": "F04",
+      "target": "figure_04",
+      "methods": [
+        "linear",
+        "bitfit",
+        "ssf",
+        "dt1d",
+        "bam",
+        "lora_conv",
+        "residual",
+        "sidetune",
+        "conv_r4",
+        "full"
+      ],
+      "g0": [
+        "linear",
+        "ssf",
+        "bam",
+        "residual",
+        "conv_r4"
+      ],
+      "g1": [
+        "bitfit",
+        "dt1d",
+        "lora_conv",
+        "sidetune",
+        "full"
+      ],
+      "seeds": [
+        0
+      ],
+      "kind": "figure",
+      "dataset": "fgvc_aircraft",
+      "backbone": "resnet18",
+      "epochs": 10,
+      "batch": 64,
+      "note": "Figure 4 representative trade-off, seed 0 only"
+    },
+    {
+      "session": "A01",
+      "target": "ablation_dtd_resnet18",
+      "methods": [
+        "dt1d",
+        "previous_plain_axial",
+        "dt1d_no_weighted_shift",
+        "dt1d_no_l1_projection",
+        "routing_reference",
+        "direct_symmetric",
+        "unshared_coefficients",
+        "height_only",
+        "fixed_average_routing",
+        "single_dilation",
+        "gate_off",
+        "pointwise_on"
+      ],
+      "g0": [
+        "dt1d",
+        "dt1d_no_weighted_shift",
+        "routing_reference",
+        "unshared_coefficients",
+        "fixed_average_routing",
+        "gate_off"
+      ],
+      "g1": [
+        "previous_plain_axial",
+        "dt1d_no_l1_projection",
+        "direct_symmetric",
+        "height_only",
+        "single_dilation",
+        "pointwise_on"
+      ],
+      "seeds": [
+        0,
+        1,
+        2
+      ],
+      "kind": "ablation",
+      "dataset": "dtd",
+      "backbone": "resnet18",
+      "epochs": 10,
+      "batch": 64,
+      "note": "Reviewer component ablation DTD/ResNet18"
+    },
+    {
+      "session": "A02",
+      "target": "ablation_flowers102_resnet50",
+      "methods": [
+        "dt1d",
+        "previous_plain_axial",
+        "dt1d_no_weighted_shift",
+        "dt1d_no_l1_projection",
+        "routing_reference",
+        "direct_symmetric",
+        "unshared_coefficients",
+        "height_only",
+        "fixed_average_routing",
+        "single_dilation",
+        "gate_off",
+        "pointwise_on"
+      ],
+      "g0": [
+        "dt1d",
+        "dt1d_no_weighted_shift",
+        "routing_reference",
+        "unshared_coefficients",
+        "fixed_average_routing",
+        "gate_off"
+      ],
+      "g1": [
+        "previous_plain_axial",
+        "dt1d_no_l1_projection",
+        "direct_symmetric",
+        "height_only",
+        "single_dilation",
+        "pointwise_on"
+      ],
+      "seeds": [
+        0,
+        1,
+        2
+      ],
+      "kind": "ablation",
+      "dataset": "flowers102",
+      "backbone": "resnet50",
+      "epochs": 10,
+      "batch": 128,
+      "note": "Reviewer component ablation Flowers102/ResNet50"
+    }
+  ],
+  "dense_sessions": [
+    {
+      "session": "D01A",
+      "target": "binary_vit_drive",
+      "methods": [
+        "linear",
+        "dt1d"
+      ],
+      "g0": [
+        "linear"
+      ],
+      "g1": [
+        "dt1d"
+      ],
+      "seeds": [
+        0,
+        1,
+        2
+      ],
+      "dataset": "drive",
+      "epochs": 100,
+      "batch": 8,
+      "note": "DRIVE binary ViT dense part 1 of 2"
+    },
+    {
+      "session": "D01B",
+      "target": "binary_vit_drive",
+      "methods": [
+        "bitfit",
+        "full"
+      ],
+      "g0": [
+        "bitfit"
+      ],
+      "g1": [
+        "full"
+      ],
+      "seeds": [
+        0,
+        1,
+        2
+      ],
+      "dataset": "drive",
+      "epochs": 100,
+      "batch": 8,
+      "note": "DRIVE binary ViT dense part 2 of 2"
+    },
+    {
+      "session": "D02A",
+      "target": "binary_deeplab_drive",
+      "methods": [
+        "linear",
+        "bitfit",
+        "ssf",
+        "dt1d",
+        "full"
+      ],
+      "g0": [
+        "linear",
+        "ssf",
+        "full"
+      ],
+      "g1": [
+        "bitfit",
+        "dt1d"
+      ],
+      "seeds": [
+        0,
+        1,
+        2
+      ],
+      "dataset": "drive",
+      "epochs": 100,
+      "batch": 8,
+      "note": "DRIVE DeepLab part 1 of 2"
+    },
+    {
+      "session": "D02B",
+      "target": "binary_deeplab_drive",
+      "methods": [
+        "bam",
+        "lora_conv",
+        "residual_adapter",
+        "conv_adapter"
+      ],
+      "g0": [
+        "bam",
+        "residual_adapter"
+      ],
+      "g1": [
+        "lora_conv",
+        "conv_adapter"
+      ],
+      "seeds": [
+        0,
+        1,
+        2
+      ],
+      "dataset": "drive",
+      "epochs": 100,
+      "batch": 8,
+      "note": "DRIVE DeepLab part 2 of 2"
+    },
+    {
+      "session": "D03",
+      "target": "semantic_pet_deeplab",
+      "methods": [
+        "linear",
+        "dt1d",
+        "bam",
+        "conv_adapter",
+        "full"
+      ],
+      "g0": [
+        "linear",
+        "bam",
+        "full"
+      ],
+      "g1": [
+        "dt1d",
+        "conv_adapter"
+      ],
+      "seeds": [
+        0,
+        1,
+        2
+      ],
+      "dataset": "oxford_pet_segmentation",
+      "epochs": 5,
+      "batch": 8,
+      "note": "Oxford-IIIT Pet semantic segmentation DeepLab"
+    },
+    {
+      "session": "D04A",
+      "target": "binary_vit_pennfudan",
+      "methods": [
+        "linear",
+        "dt1d"
+      ],
+      "g0": [
+        "linear"
+      ],
+      "g1": [
+        "dt1d"
+      ],
+      "seeds": [
+        0,
+        1,
+        2
+      ],
+      "dataset": "pennfudan",
+      "epochs": 100,
+      "batch": 8,
+      "note": "PennFudan binary ViT dense part 1 of 2"
+    },
+    {
+      "session": "D04B",
+      "target": "binary_vit_pennfudan",
+      "methods": [
+        "bitfit",
+        "full"
+      ],
+      "g0": [
+        "bitfit"
+      ],
+      "g1": [
+        "full"
+      ],
+      "seeds": [
+        0,
+        1,
+        2
+      ],
+      "dataset": "pennfudan",
+      "epochs": 100,
+      "batch": 8,
+      "note": "PennFudan binary ViT dense part 2 of 2"
+    },
+    {
+      "session": "D05A",
+      "target": "binary_deeplab_pennfudan",
+      "methods": [
+        "linear",
+        "bitfit",
+        "ssf",
+        "dt1d",
+        "full"
+      ],
+      "g0": [
+        "linear",
+        "ssf",
+        "full"
+      ],
+      "g1": [
+        "bitfit",
+        "dt1d"
+      ],
+      "seeds": [
+        0,
+        1,
+        2
+      ],
+      "dataset": "pennfudan",
+      "epochs": 100,
+      "batch": 8,
+      "note": "PennFudan DeepLab part 1 of 2"
+    },
+    {
+      "session": "D05B",
+      "target": "binary_deeplab_pennfudan",
+      "methods": [
+        "bam",
+        "lora_conv",
+        "residual_adapter",
+        "conv_adapter"
+      ],
+      "g0": [
+        "bam",
+        "residual_adapter"
+      ],
+      "g1": [
+        "lora_conv",
+        "conv_adapter"
+      ],
+      "seeds": [
+        0,
+        1,
+        2
+      ],
+      "dataset": "pennfudan",
+      "epochs": 100,
+      "batch": 8,
+      "note": "PennFudan DeepLab part 2 of 2"
+    },
+    {
+      "session": "D06",
+      "target": "detection_pet_fasterrcnn",
+      "methods": [
+        "head_only",
+        "dt1d",
+        "bam",
+        "conv_adapter",
+        "full"
+      ],
+      "g0": [
+        "head_only",
+        "bam",
+        "full"
+      ],
+      "g1": [
+        "dt1d",
+        "conv_adapter"
+      ],
+      "seeds": [
+        0,
+        1,
+        2
+      ],
+      "dataset": "oxford_pet_detection",
+      "epochs": 1,
+      "batch": 1,
+      "note": "Oxford-IIIT Pet Faster R-CNN feasibility"
+    }
+  ],
+  "vit_sessions": [
+    {
+      "session": "V01",
+      "dataset": "vtab-dtd",
+      "batch": 32,
+      "vpt_tokens": 10,
+      "note": "NEW result: VTAB-DTD / ViT-B16 / BS32"
+    },
+    {
+      "session": "V02",
+      "dataset": "vtab-eurosat",
+      "batch": 32,
+      "vpt_tokens": 10,
+      "note": "NEW result: VTAB-EuroSAT / ViT-B16 / BS32"
+    },
+    {
+      "session": "V03",
+      "dataset": "flowers102",
+      "batch": 16,
+      "vpt_tokens": 5,
+      "note": "Manuscript ViT result: Flowers102 / ViT-B16 / BS16"
+    },
+    {
+      "session": "V04",
+      "dataset": "flowers102",
+      "batch": 32,
+      "vpt_tokens": 5,
+      "note": "Manuscript ViT result: Flowers102 / ViT-B16 / BS32"
+    },
+    {
+      "session": "V05",
+      "dataset": "vtab-caltech101",
+      "batch": 32,
+      "vpt_tokens": 10,
+      "note": "Manuscript ViT result: VTAB-Caltech101 / ViT-B16 / BS32"
+    }
+  ]
+}

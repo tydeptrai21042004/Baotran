@@ -1,0 +1,216 @@
+{
+  "version": 5,
+  "scripts": {
+    "FINAL_MERGE_ALL_RESULTS.sh": {
+      "bash_n": true,
+      "clones_repo": null,
+      "hard_cap_710m": false
+    },
+    "G00_static_figures_02_03.sh": {
+      "bash_n": true,
+      "clones_repo": null,
+      "hard_cap_710m": false
+    },
+    "cnn/A01_ablation_dtd_resnet18.sh": {
+      "bash_n": true,
+      "clones_repo": true,
+      "hard_cap_710m": true
+    },
+    "cnn/A02_ablation_flowers102_resnet50.sh": {
+      "bash_n": true,
+      "clones_repo": true,
+      "hard_cap_710m": true
+    },
+    "cnn/C01A_table_03.sh": {
+      "bash_n": true,
+      "clones_repo": true,
+      "hard_cap_710m": true
+    },
+    "cnn/C01B_table_03.sh": {
+      "bash_n": true,
+      "clones_repo": true,
+      "hard_cap_710m": true
+    },
+    "cnn/C02_table_04.sh": {
+      "bash_n": true,
+      "clones_repo": true,
+      "hard_cap_710m": true
+    },
+    "cnn/C03_table_05.sh": {
+      "bash_n": true,
+      "clones_repo": true,
+      "hard_cap_710m": true
+    },
+    "cnn/C04_table_06.sh": {
+      "bash_n": true,
+      "clones_repo": true,
+      "hard_cap_710m": true
+    },
+    "cnn/C05_table_07.sh": {
+      "bash_n": true,
+      "clones_repo": true,
+      "hard_cap_710m": true
+    },
+    "cnn/C06A_table_08.sh": {
+      "bash_n": true,
+      "clones_repo": true,
+      "hard_cap_710m": true
+    },
+    "cnn/C06B_table_08.sh": {
+      "bash_n": true,
+      "clones_repo": true,
+      "hard_cap_710m": true
+    },
+    "cnn/C07_table_09.sh": {
+      "bash_n": true,
+      "clones_repo": true,
+      "hard_cap_710m": true
+    },
+    "cnn/C08A_table_10.sh": {
+      "bash_n": true,
+      "clones_repo": true,
+      "hard_cap_710m": true
+    },
+    "cnn/C08B_table_10.sh": {
+      "bash_n": true,
+      "clones_repo": true,
+      "hard_cap_710m": true
+    },
+    "cnn/C09A_table_11.sh": {
+      "bash_n": true,
+      "clones_repo": true,
+      "hard_cap_710m": true
+    },
+    "cnn/C09B_table_11.sh": {
+      "bash_n": true,
+      "clones_repo": true,
+      "hard_cap_710m": true
+    },
+    "cnn/C10_table_12.sh": {
+      "bash_n": true,
+      "clones_repo": true,
+      "hard_cap_710m": true
+    },
+    "cnn/C11_table_13.sh": {
+      "bash_n": true,
+      "clones_repo": true,
+      "hard_cap_710m": true
+    },
+    "cnn/C12_table_14_15.sh": {
+      "bash_n": true,
+      "clones_repo": true,
+      "hard_cap_710m": true
+    },
+    "cnn/C13_table_18_19.sh": {
+      "bash_n": true,
+      "clones_repo": true,
+      "hard_cap_710m": true
+    },
+    "cnn/F01_figure_01.sh": {
+      "bash_n": true,
+      "clones_repo": true,
+      "hard_cap_710m": true
+    },
+    "cnn/F04_figure_04.sh": {
+      "bash_n": true,
+      "clones_repo": true,
+      "hard_cap_710m": true
+    },
+    "dense/D01A_binary_vit_drive.sh": {
+      "bash_n": true,
+      "clones_repo": true,
+      "hard_cap_710m": true
+    },
+    "dense/D01B_binary_vit_drive.sh": {
+      "bash_n": true,
+      "clones_repo": true,
+      "hard_cap_710m": true
+    },
+    "dense/D02A_binary_deeplab_drive.sh": {
+      "bash_n": true,
+      "clones_repo": true,
+      "hard_cap_710m": true
+    },
+    "dense/D02B_binary_deeplab_drive.sh": {
+      "bash_n": true,
+      "clones_repo": true,
+      "hard_cap_710m": true
+    },
+    "dense/D03_semantic_pet_deeplab.sh": {
+      "bash_n": true,
+      "clones_repo": true,
+      "hard_cap_710m": true
+    },
+    "dense/D04A_binary_vit_pennfudan.sh": {
+      "bash_n": true,
+      "clones_repo": true,
+      "hard_cap_710m": true
+    },
+    "dense/D04B_binary_vit_pennfudan.sh": {
+      "bash_n": true,
+      "clones_repo": true,
+      "hard_cap_710m": true
+    },
+    "dense/D05A_binary_deeplab_pennfudan.sh": {
+      "bash_n": true,
+      "clones_repo": true,
+      "hard_cap_710m": true
+    },
+    "dense/D05B_binary_deeplab_pennfudan.sh": {
+      "bash_n": true,
+      "clones_repo": true,
+      "hard_cap_710m": true
+    },
+    "dense/D06_detection_pet_fasterrcnn.sh": {
+      "bash_n": true,
+      "clones_repo": true,
+      "hard_cap_710m": true
+    },
+    "vit/V01_vtab_dtd_bs32.sh": {
+      "bash_n": true,
+      "clones_repo": true,
+      "hard_cap_710m": true
+    },
+    "vit/V02_vtab_eurosat_bs32.sh": {
+      "bash_n": true,
+      "clones_repo": true,
+      "hard_cap_710m": true
+    },
+    "vit/V03_flowers102_bs16.sh": {
+      "bash_n": true,
+      "clones_repo": true,
+      "hard_cap_710m": true
+    },
+    "vit/V04_flowers102_bs32.sh": {
+      "bash_n": true,
+      "clones_repo": true,
+      "hard_cap_710m": true
+    },
+    "vit/V05_vtab_caltech101_bs32.sh": {
+      "bash_n": true,
+      "clones_repo": true,
+      "hard_cap_710m": true
+    }
+  },
+  "errors": [],
+  "session_count": 36,
+  "split_sessions": [
+    "C01A",
+    "C01B",
+    "C06A",
+    "C06B",
+    "C08A",
+    "C08B",
+    "C09A",
+    "C09B",
+    "D01A",
+    "D01B",
+    "D02A",
+    "D02B",
+    "D04A",
+    "D04B",
+    "D05A",
+    "D05B"
+  ],
+  "errors_count": 0
+}
