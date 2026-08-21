@@ -1,0 +1,79 @@
+{
+  "source": "V\u0103n b\u1ea3n \u0111\u00e3 d\u00e1n (1)(20260821-034910).txt",
+  "removed_table_labels": [
+    "tab:flowers102_r18_100_bs64",
+    "tab:flowers102_r18_100_bs32",
+    "tab:svhn_r50_10",
+    "tab:pet_r50_10",
+    "tab:pet_r50_10_efficiency",
+    "tab:food101_r18_10",
+    "tab:food101_effb0_10"
+  ],
+  "table_count_before": 34,
+  "table_count_after": 27,
+  "removed_count": 7,
+  "dense_label_harmonization": {
+    "detection_existing_method": "head_only",
+    "display_label": "Linear / Head-only",
+    "reason": "In dense_prediction/models.py, tuning_method=linear and tuning_method=head_only follow the same trainability path: frozen backbone with task head enabled and no adapter. Existing D06 values are reused; no redundant GPU rerun is scheduled."
+  },
+  "v7_blank_template_label": "tab:additional_small_cnn",
+  "v7_new_datasets": [
+    "N01 STL10 / ResNet-18",
+    "N02 CIFAR100 / ResNet-18"
+  ],
+  "v7_policy": "No genuinely new ViT or dense dataset. Dense additional tasks only fill missing rows in existing manuscript tables.",
+  "version": "v8-small-cnn-100ep",
+  "replacement_blank_tables": [
+    {
+      "label": "tab:additional_small_cnn",
+      "datasets": [
+        "STL10",
+        "Oxford Flowers17"
+      ],
+      "epochs": 10,
+      "status": "blank until complete"
+    },
+    {
+      "label": "tab:additional_small_cnn_100ep",
+      "datasets": [
+        "STL10",
+        "Oxford Flowers17"
+      ],
+      "epochs": 100,
+      "status": "blank until complete"
+    }
+  ],
+  "note": "Existing zero-result table removals are unchanged. The additional CNN template now uses STL10 and Oxford Flowers17 at 10 and 100 epochs.",
+  "additional_template_version": "v10",
+  "new_additional_experiments": [
+    {
+      "dataset": "STL10",
+      "backbone": "EfficientNet-B0",
+      "epochs": 10,
+      "target": "v10_n01_stl10_efficientnet_b0_10",
+      "id": "N01"
+    },
+    {
+      "dataset": "Oxford Flowers17",
+      "backbone": "MobileNetV3-Small",
+      "epochs": 10,
+      "target": "v10_n02_flowers17_mobilenet_v3_small_10",
+      "id": "N02"
+    },
+    {
+      "dataset": "STL10",
+      "backbone": "DenseNet-121",
+      "epochs": 100,
+      "target": "v10_n03_stl10_densenet121_100",
+      "id": "N03"
+    },
+    {
+      "dataset": "Oxford Flowers17",
+      "backbone": "ResNet-18",
+      "epochs": 100,
+      "target": "v10_n04_flowers17_resnet18_100",
+      "id": "N04"
+    }
+  ]
+}

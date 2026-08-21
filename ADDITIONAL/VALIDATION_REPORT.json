@@ -1,0 +1,108 @@
+{
+  "schema_version": 1,
+  "package_version": "v10",
+  "status": "PASS",
+  "additional_scope": {
+    "new_logical_experiments": 4,
+    "new_training_tasks": 40,
+    "new_vit_datasets": 0,
+    "new_dense_datasets": 0,
+    "assignments": [
+      {
+        "id": "N01",
+        "dataset": "stl10",
+        "backbone": "efficientnet_b0",
+        "epochs": 10,
+        "task_count": 10,
+        "target": "v10_n01_stl10_efficientnet_b0_10"
+      },
+      {
+        "id": "N02",
+        "dataset": "flowers17",
+        "backbone": "mobilenet_v3_small",
+        "epochs": 10,
+        "task_count": 10,
+        "target": "v10_n02_flowers17_mobilenet_v3_small_10"
+      },
+      {
+        "id": "N03",
+        "dataset": "stl10",
+        "backbone": "densenet121",
+        "epochs": 100,
+        "task_count": 10,
+        "target": "v10_n03_stl10_densenet121_100"
+      },
+      {
+        "id": "N04",
+        "dataset": "flowers17",
+        "backbone": "resnet18",
+        "epochs": 100,
+        "task_count": 10,
+        "target": "v10_n04_flowers17_resnet18_100"
+      }
+    ],
+    "baseline_methods_per_new_experiment": 10,
+    "seeds": [
+      0,
+      1,
+      2
+    ]
+  },
+  "all_runnable_tasks": {
+    "total": 98,
+    "cnn": 84,
+    "dense": 14,
+    "fill_missing_existing": 58,
+    "new_small_cnn": 40
+  },
+  "runtime_safety": {
+    "all_run_order_scripts_pass_static_safety": true,
+    "hard_session_planning_cap_minutes": 600,
+    "reserve_minutes": 45,
+    "safety_factor": 1.6,
+    "session_start_recorded_before_clone_install_download": true,
+    "one_real_epoch_preflight_calibration": true,
+    "recheck_before_each_gpu_wave": true,
+    "timeout_or_watchdog_kill_used": false,
+    "policy": "If the next complete LR/seed or final-seed unit is predicted not to fit, it is not launched; progress is zipped and resumed in a fresh Kaggle session."
+  },
+  "convnet_backbone_validation": {
+    "densenet121_constructed_locally_for_all_10_methods": true,
+    "methods": [
+      "linear",
+      "bitfit",
+      "ssf",
+      "dt1d",
+      "conv_r4",
+      "bam",
+      "residual",
+      "lora_conv",
+      "sidetune",
+      "full"
+    ],
+    "note": "Local construction smoke test used torchvision DenseNet-121 with pretrained weights disabled; every method produced a nonzero trainable parameter set."
+  },
+  "latex": {
+    "compiled": true,
+    "pages": 41,
+    "new_blank_tables": [
+      "tab:additional_n01_stl10_efficientnet_b0_10ep",
+      "tab:additional_n02_flowers17_mobilenet_v3_small_10ep",
+      "tab:additional_n03_stl10_densenet121_100ep",
+      "tab:additional_n04_flowers17_resnet18_100ep"
+    ],
+    "visual_check_pages": [
+      23,
+      24
+    ],
+    "visual_check": "PASS - no clipping or overlap in the four new blank tables."
+  },
+  "checks": {
+    "all_98_task_shells_bash_n": "PASS",
+    "four_new_yaml_configs_parse": "PASS",
+    "runtime_python_helpers_py_compile": "PASS",
+    "run_order_paths_exist": "PASS",
+    "new_directory_count_exactly_4": "PASS",
+    "new_shell_count_exactly_40": "PASS"
+  }
+}
