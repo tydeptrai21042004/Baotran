@@ -1,3 +1,5 @@
+> **LEGACY NOTICE:** These original cells use the old 710-minute strategy. For any new or missing-result run, use `ADDITIONAL/ALL_KAGGLE_CELLS.md` instead.
+
 # ALL KAGGLE CELLS — DT1D/ViT final manuscript reruns
 
 Each section below is a standalone Kaggle `%%bash`-style shell cell. Run **one session per cell**. Heavy experiments are already split into independent sessions; each session has a hard 710-minute cap and writes a resumable ZIP.

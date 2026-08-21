@@ -20,10 +20,6 @@ order,session,family,target,experiment,methods,seeds,standalone_script,time_poli
 19,F04,CNN,figure_04,"Figure 4 representative trade-off, seed 0 only","linear,bitfit,ssf,dt1d,bam,lora_conv,residual,sidetune,conv_r4,full",0,cnn/F04_figure_04.sh,710m hard cap + resumable ZIP
 20,A01,CNN,ablation_dtd_resnet18,Reviewer component ablation DTD/ResNet18,"dt1d,previous_plain_axial,dt1d_no_weighted_shift,dt1d_no_l1_projection,routing_reference,direct_symmetric,unshared_coefficients,height_only,fixed_average_routing,single_dilation,gate_off,pointwise_on","0,1,2",cnn/A01_ablation_dtd_resnet18.sh,710m hard cap + resumable ZIP
 21,A02,CNN,ablation_flowers102_resnet50,Reviewer component ablation Flowers102/ResNet50,"dt1d,previous_plain_axial,dt1d_no_weighted_shift,dt1d_no_l1_projection,routing_reference,direct_symmetric,unshared_coefficients,height_only,fixed_average_routing,single_dilation,gate_off,pointwise_on","0,1,2",cnn/A02_ablation_flowers102_resnet50.sh,710m hard cap + resumable ZIP
-22,D01A,Dense,binary_vit_drive,DRIVE binary ViT dense part 1 of 2,"linear,dt1d","0,1,2",dense/D01A_binary_vit_drive.sh,710m hard cap + resumable ZIP
-23,D01B,Dense,binary_vit_drive,DRIVE binary ViT dense part 2 of 2,"bitfit,full","0,1,2",dense/D01B_binary_vit_drive.sh,710m hard cap + resumable ZIP
-24,D02A,Dense,binary_deeplab_drive,DRIVE DeepLab part 1 of 2,"linear,bitfit,ssf,dt1d,full","0,1,2",dense/D02A_binary_deeplab_drive.sh,710m hard cap + resumable ZIP
-25,D02B,Dense,binary_deeplab_drive,DRIVE DeepLab part 2 of 2,"bam,lora_conv,residual_adapter,conv_adapter","0,1,2",dense/D02B_binary_deeplab_drive.sh,710m hard cap + resumable ZIP
 26,D03,Dense,semantic_pet_deeplab,Oxford-IIIT Pet semantic segmentation DeepLab,"linear,dt1d,bam,conv_adapter,full","0,1,2",dense/D03_semantic_pet_deeplab.sh,710m hard cap + resumable ZIP
 27,D04A,Dense,binary_vit_pennfudan,PennFudan binary ViT dense part 1 of 2,"linear,dt1d","0,1,2",dense/D04A_binary_vit_pennfudan.sh,710m hard cap + resumable ZIP
 28,D04B,Dense,binary_vit_pennfudan,PennFudan binary ViT dense part 2 of 2,"bitfit,full","0,1,2",dense/D04B_binary_vit_pennfudan.sh,710m hard cap + resumable ZIP

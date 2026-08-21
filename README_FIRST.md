@@ -1,3 +1,11 @@
+# IMPORTANT — use `ADDITIONAL/` for all new or missing-result work
+
+The original v5 session files are preserved for provenance, but they use the old 710-minute/11h50 strategy. **Do not use them for new reruns.** All newly generated runtime-planned sessions, missing-baseline completion tasks, and new small-dataset experiments are isolated under `ADDITIONAL/`. Start with `ADDITIONAL/README_FIRST.md` and `ADDITIONAL/RUN_ORDER.csv`.
+
+The v8 genuinely new experiments are **CNN-only**: STL10 and Oxford Flowers17 with ResNet-18 at 10 and 100 epochs. No new ViT or dense-prediction dataset is added. Dense tasks under `ADDITIONAL/FILL_MISSING_EXISTING_TABLES/` exist only to fill missing baselines in tables already present in the manuscript.
+
+---
+
 # DT1D / WHC final Kaggle rerun bundle (v5)
 
 Current GitHub repos:

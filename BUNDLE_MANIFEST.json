@@ -1,5 +1,5 @@
 {
-  "version": 5,
+  "version": 8,
   "cnn_repo": "tydeptrai21042004/whc-dt1d",
   "vit_repo": "tydeptrai21042004/whc-vit",
   "cnn_sessions": [
@@ -744,108 +744,6 @@
   ],
   "dense_sessions": [
     {
-      "session": "D01A",
-      "target": "binary_vit_drive",
-      "methods": [
-        "linear",
-        "dt1d"
-      ],
-      "g0": [
-        "linear"
-      ],
-      "g1": [
-        "dt1d"
-      ],
-      "seeds": [
-        0,
-        1,
-        2
-      ],
-      "dataset": "drive",
-      "epochs": 100,
-      "batch": 8,
-      "note": "DRIVE binary ViT dense part 1 of 2"
-    },
-    {
-      "session": "D01B",
-      "target": "binary_vit_drive",
-      "methods": [
-        "bitfit",
-        "full"
-      ],
-      "g0": [
-        "bitfit"
-      ],
-      "g1": [
-        "full"
-      ],
-      "seeds": [
-        0,
-        1,
-        2
-      ],
-      "dataset": "drive",
-      "epochs": 100,
-      "batch": 8,
-      "note": "DRIVE binary ViT dense part 2 of 2"
-    },
-    {
-      "session": "D02A",
-      "target": "binary_deeplab_drive",
-      "methods": [
-        "linear",
-        "bitfit",
-        "ssf",
-        "dt1d",
-        "full"
-      ],
-      "g0": [
-        "linear",
-        "ssf",
-        "full"
-      ],
-      "g1": [
-        "bitfit",
-        "dt1d"
-      ],
-      "seeds": [
-        0,
-        1,
-        2
-      ],
-      "dataset": "drive",
-      "epochs": 100,
-      "batch": 8,
-      "note": "DRIVE DeepLab part 1 of 2"
-    },
-    {
-      "session": "D02B",
-      "target": "binary_deeplab_drive",
-      "methods": [
-        "bam",
-        "lora_conv",
-        "residual_adapter",
-        "conv_adapter"
-      ],
-      "g0": [
-        "bam",
-        "residual_adapter"
-      ],
-      "g1": [
-        "lora_conv",
-        "conv_adapter"
-      ],
-      "seeds": [
-        0,
-        1,
-        2
-      ],
-      "dataset": "drive",
-      "epochs": 100,
-      "batch": 8,
-      "note": "DRIVE DeepLab part 2 of 2"
-    },
-    {
       "session": "D03",
       "target": "semantic_pet_deeplab",
       "methods": [
@@ -1042,5 +940,23 @@
       "vpt_tokens": 10,
       "note": "Manuscript ViT result: VTAB-Caltech101 / ViT-B16 / BS32"
     }
-  ]
+  ],
+  "v7_additional_folder": "ADDITIONAL",
+  "v8_new_dataset_policy": {
+    "new_dataset_family": "cnn_only",
+    "datasets": [
+      "STL10",
+      "Oxford Flowers17"
+    ],
+    "backbone": "ResNet-18",
+    "epoch_budgets": [
+      10,
+      100
+    ],
+    "former_n02_replaced": true,
+    "flowers17_official_source": "Oxford Visual Geometry Group",
+    "flowers17_split": "official datasplits.mat split 1",
+    "new_vit_dataset_tasks": 0,
+    "new_dense_dataset_tasks": 0
+  }
 }

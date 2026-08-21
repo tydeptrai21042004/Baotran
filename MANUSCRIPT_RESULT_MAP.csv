@@ -20,10 +20,6 @@ figure_01,figure,caltech101,resnet18,100,64,0,F01
 figure_04,figure,fgvc_aircraft,resnet18,10,64,0,F04
 ablation_dtd_resnet18,ablation,dtd,resnet18,10,64,"0,1,2",A01
 ablation_flowers102_resnet50,ablation,flowers102,resnet50,10,128,"0,1,2",A02
-binary_vit_drive,dense,drive,,100,8,"0,1,2",D01A
-binary_vit_drive,dense,drive,,100,8,"0,1,2",D01B
-binary_deeplab_drive,dense,drive,,100,8,"0,1,2",D02A
-binary_deeplab_drive,dense,drive,,100,8,"0,1,2",D02B
 semantic_pet_deeplab,dense,oxford_pet_segmentation,,5,8,"0,1,2",D03
 binary_vit_pennfudan,dense,pennfudan,,100,8,"0,1,2",D04A
 binary_vit_pennfudan,dense,pennfudan,,100,8,"0,1,2",D04B

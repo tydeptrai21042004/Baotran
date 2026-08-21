@@ -1,216 +1,33 @@
 {
-  "version": 5,
-  "scripts": {
-    "FINAL_MERGE_ALL_RESULTS.sh": {
-      "bash_n": true,
-      "clones_repo": null,
-      "hard_cap_710m": false
-    },
-    "G00_static_figures_02_03.sh": {
-      "bash_n": true,
-      "clones_repo": null,
-      "hard_cap_710m": false
-    },
-    "cnn/A01_ablation_dtd_resnet18.sh": {
-      "bash_n": true,
-      "clones_repo": true,
-      "hard_cap_710m": true
-    },
-    "cnn/A02_ablation_flowers102_resnet50.sh": {
-      "bash_n": true,
-      "clones_repo": true,
-      "hard_cap_710m": true
-    },
-    "cnn/C01A_table_03.sh": {
-      "bash_n": true,
-      "clones_repo": true,
-      "hard_cap_710m": true
-    },
-    "cnn/C01B_table_03.sh": {
-      "bash_n": true,
-      "clones_repo": true,
-      "hard_cap_710m": true
-    },
-    "cnn/C02_table_04.sh": {
-      "bash_n": true,
-      "clones_repo": true,
-      "hard_cap_710m": true
-    },
-    "cnn/C03_table_05.sh": {
-      "bash_n": true,
-      "clones_repo": true,
-      "hard_cap_710m": true
-    },
-    "cnn/C04_table_06.sh": {
-      "bash_n": true,
-      "clones_repo": true,
-      "hard_cap_710m": true
-    },
-    "cnn/C05_table_07.sh": {
-      "bash_n": true,
-      "clones_repo": true,
-      "hard_cap_710m": true
-    },
-    "cnn/C06A_table_08.sh": {
-      "bash_n": true,
-      "clones_repo": true,
-      "hard_cap_710m": true
-    },
-    "cnn/C06B_table_08.sh": {
-      "bash_n": true,
-      "clones_repo": true,
-      "hard_cap_710m": true
-    },
-    "cnn/C07_table_09.sh": {
-      "bash_n": true,
-      "clones_repo": true,
-      "hard_cap_710m": true
-    },
-    "cnn/C08A_table_10.sh": {
-      "bash_n": true,
-      "clones_repo": true,
-      "hard_cap_710m": true
-    },
-    "cnn/C08B_table_10.sh": {
-      "bash_n": true,
-      "clones_repo": true,
-      "hard_cap_710m": true
-    },
-    "cnn/C09A_table_11.sh": {
-      "bash_n": true,
-      "clones_repo": true,
-      "hard_cap_710m": true
-    },
-    "cnn/C09B_table_11.sh": {
-      "bash_n": true,
-      "clones_repo": true,
-      "hard_cap_710m": true
-    },
-    "cnn/C10_table_12.sh": {
-      "bash_n": true,
-      "clones_repo": true,
-      "hard_cap_710m": true
-    },
-    "cnn/C11_table_13.sh": {
-      "bash_n": true,
-      "clones_repo": true,
-      "hard_cap_710m": true
-    },
-    "cnn/C12_table_14_15.sh": {
-      "bash_n": true,
-      "clones_repo": true,
-      "hard_cap_710m": true
-    },
-    "cnn/C13_table_18_19.sh": {
-      "bash_n": true,
-      "clones_repo": true,
-      "hard_cap_710m": true
-    },
-    "cnn/F01_figure_01.sh": {
-      "bash_n": true,
-      "clones_repo": true,
-      "hard_cap_710m": true
-    },
-    "cnn/F04_figure_04.sh": {
-      "bash_n": true,
-      "clones_repo": true,
-      "hard_cap_710m": true
-    },
-    "dense/D01A_binary_vit_drive.sh": {
-      "bash_n": true,
-      "clones_repo": true,
-      "hard_cap_710m": true
-    },
-    "dense/D01B_binary_vit_drive.sh": {
-      "bash_n": true,
-      "clones_repo": true,
-      "hard_cap_710m": true
-    },
-    "dense/D02A_binary_deeplab_drive.sh": {
-      "bash_n": true,
-      "clones_repo": true,
-      "hard_cap_710m": true
-    },
-    "dense/D02B_binary_deeplab_drive.sh": {
-      "bash_n": true,
-      "clones_repo": true,
-      "hard_cap_710m": true
-    },
-    "dense/D03_semantic_pet_deeplab.sh": {
-      "bash_n": true,
-      "clones_repo": true,
-      "hard_cap_710m": true
-    },
-    "dense/D04A_binary_vit_pennfudan.sh": {
-      "bash_n": true,
-      "clones_repo": true,
-      "hard_cap_710m": true
-    },
-    "dense/D04B_binary_vit_pennfudan.sh": {
-      "bash_n": true,
-      "clones_repo": true,
-      "hard_cap_710m": true
-    },
-    "dense/D05A_binary_deeplab_pennfudan.sh": {
-      "bash_n": true,
-      "clones_repo": true,
-      "hard_cap_710m": true
-    },
-    "dense/D05B_binary_deeplab_pennfudan.sh": {
-      "bash_n": true,
-      "clones_repo": true,
-      "hard_cap_710m": true
-    },
-    "dense/D06_detection_pet_fasterrcnn.sh": {
-      "bash_n": true,
-      "clones_repo": true,
-      "hard_cap_710m": true
-    },
-    "vit/V01_vtab_dtd_bs32.sh": {
-      "bash_n": true,
-      "clones_repo": true,
-      "hard_cap_710m": true
-    },
-    "vit/V02_vtab_eurosat_bs32.sh": {
-      "bash_n": true,
-      "clones_repo": true,
-      "hard_cap_710m": true
-    },
-    "vit/V03_flowers102_bs16.sh": {
-      "bash_n": true,
-      "clones_repo": true,
-      "hard_cap_710m": true
-    },
-    "vit/V04_flowers102_bs32.sh": {
-      "bash_n": true,
-      "clones_repo": true,
-      "hard_cap_710m": true
-    },
-    "vit/V05_vtab_caltech101_bs32.sh": {
-      "bash_n": true,
-      "clones_repo": true,
-      "hard_cap_710m": true
-    }
-  },
-  "errors": [],
-  "session_count": 36,
-  "split_sessions": [
-    "C01A",
-    "C01B",
-    "C06A",
-    "C06B",
-    "C08A",
-    "C08B",
-    "C09A",
-    "C09B",
-    "D01A",
-    "D01B",
-    "D02A",
-    "D02B",
-    "D04A",
-    "D04B",
-    "D05A",
-    "D05B"
+  "version": "v8-small-cnn-100ep",
+  "runnable_training_task_scripts": 98,
+  "missing_existing_cnn_tasks": 44,
+  "missing_existing_dense_tasks": 14,
+  "new_small_cnn_tasks": 40,
+  "new_small_cnn_blocks": [
+    "N01 STL10 / ResNet-18 / 10ep",
+    "N02 Oxford Flowers17 / ResNet-18 / 10ep",
+    "N03 STL10 / ResNet-18 / 100ep",
+    "N04 Oxford Flowers17 / ResNet-18 / 100ep"
   ],
-  "errors_count": 0
+  "new_vit_dataset_tasks": 0,
+  "new_dense_dataset_tasks": 0,
+  "former_n02_replaced": true,
+  "flowers17_official_download_bootstrap": "ADDITIONAL/runtime_tools/bootstrap_flowers17.py",
+  "flowers17_official_split": "datasplits.mat split 1 (trn1/val1/tst1)",
+  "blank_template_labels": [
+    "tab:additional_small_cnn",
+    "tab:additional_small_cnn_100ep"
+  ],
+  "additional_default_safe_minutes": 480,
+  "safety_factor": 1.45,
+  "reserve_minutes": 25,
+  "bash_syntax_failures": [],
+  "python_compile_failures": [],
+  "yaml_validation_failures": [],
+  "forbidden_old_n02_new_dataset_entries": [],
+  "latex_compile": {
+    "returncode": 0,
+    "tail": "red while \\output is active [37]\nUnderfull \\hbox (badness 4752) in paragraph at lines 2015--2019\n[]\\OT1/cmr/m/n/10 (+20) Chen H, et al: Conv-Adapter: Explor-ing param-e-ter eff\ni-cient trans-fer\n\nUnderfull \\hbox (badness 2426) in paragraph at lines 2015--2019\n\\OT1/cmr/m/n/10 (+20) learn-ing for Con-vNets. In: Proc. CVPRW, pp. 1551--1561 \n(2024). [][]doi:\n\n\nUnderfull \\vbox (badness 10000) has occurred while \\output is active [38]\nUnderfull \\hbox (badness 2384) in paragraph at lines 2122--2126\n[]\\OT1/cmr/m/n/10 (+20) Ding X, et al: Scal-ing up your ker-nels to $31 \\OMS/cm\nsy/m/n/10.03749 ^^B \\OT1/cmr/m/n/10 (+20) 31$: Revis-it-ing large\n\nUnderfull \\hbox (badness 1478) in paragraph at lines 2122--2126\n\\OT1/cmr/m/n/10 (+20) ker-nel design in CNNs. In: Proc. CVPR, pp. 11953--11965 \n(2022). [][]doi:\n\n\nUnderfull \\vbox (badness 10000) has occurred while \\output is active [39]\nUnderfull \\hbox (badness 6047) in paragraph at lines 2145--2149\n[]\\OT1/cmr/m/n/10 (+20) Yin D, et al: $1%$ VS $100%$: Parameter-efficient low r\nank adapter\n\nUnderfull \\hbox (badness 3375) in paragraph at lines 2145--2149\n\\OT1/cmr/m/n/10 (+20) for dense pre-dic-tions. In: Proc. CVPR, pp. 20116--20126\n (2023). [][]doi:\n\n\nUnderfull \\vbox (badness 10000) has occurred while \\output is active [40]\n\nPackage natbib Warning: There were undefined citations.\n\n\n\nUnderfull \\vbox (badness 10000) has occurred while \\output is active [41]\n(./sn-article.aux\n\nPackage natbib Warning: Citation(s) may have changed.\n(natbib)                Rerun to get citations correct.\n\n)\n\nLaTeX Font Warning: Size substitutions with differences\n(Font)              up to 0.48314pt have occurred.\n\n\nLaTeX Warning: There were undefined references.\n\n\nLaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.\n\n )\n(see the transcript file for additional information)</usr/share/texlive/texmf-d\nist/fonts/type1/public/amsfonts/cm/cmbsy10.pfb></usr/share/texlive/texmf-dist/f\nonts/type1/public/amsfonts/cm/cmbx10.pfb></usr/share/texlive/texmf-dist/fonts/t\nype1/public/amsfonts/cm/cmbx12.pfb></usr/share/texlive/texmf-dist/fonts/type1/p\nublic/amsfonts/cm/cmbx6.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/a\nmsfonts/cm/cmbx8.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts\n/cm/cmbx9.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cme\nx10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cmextra/cmex\n9.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb>\n</usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi5.pfb></usr/s\nhare/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb></usr/share/te\nxlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi9.pfb></usr/share/texlive/t\nexmf-dist/fonts/type1/public/amsfonts/cm/cmmib10.pfb></usr/share/texlive/texmf-\ndist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/share/texlive/texmf-dist/fo\nnts/type1/public/amsfonts/cm/cmr12.pfb></usr/share/texlive/texmf-dist/fonts/typ\ne1/public/amsfonts/cm/cmr17.pfb></usr/share/texlive/texmf-dist/fonts/type1/publ\nic/amsfonts/cm/cmr5.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfo\nnts/cm/cmr7.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/c\nmr8.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr9.pfb>\n</usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/\nshare/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/share/t\nexlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy9.pfb></usr/share/texlive/\ntexmf-dist/fonts/type1/public/amsfonts/cm/cmti7.pfb></usr/share/texlive/texmf-d\nist/fonts/type1/public/amsfonts/cm/cmti9.pfb></usr/share/texlive/texmf-dist/fon\nts/type1/public/amsfonts/cm/cmtt10.pfb></usr/share/texlive/texmf-dist/fonts/typ\ne1/public/amsfonts/symbols/msam10.pfb></usr/share/texlive/texmf-dist/fonts/type\n1/public/amsfonts/symbols/msbm10.pfb>\nOutput written on sn-article.pdf (41 pages, 543125 bytes).\nTranscript written on sn-article.log.\n"
+  }
 }
