@@ -1,0 +1,166 @@
+{
+  "script_count": 40,
+  "bad_count": 0,
+  "scripts": {
+    "PHASE1_FILL_CURRENT_PARTIAL_CNN_TABLES/C01_DTD_ResNet50_100ep/C01_conv_r2.sh": {
+      "ok": true,
+      "stderr": ""
+    },
+    "PHASE1_FILL_CURRENT_PARTIAL_CNN_TABLES/C01_DTD_ResNet50_100ep/C01_conv_r4.sh": {
+      "ok": true,
+      "stderr": ""
+    },
+    "PHASE1_FILL_CURRENT_PARTIAL_CNN_TABLES/C01_DTD_ResNet50_100ep/C01_dt1d.sh": {
+      "ok": true,
+      "stderr": ""
+    },
+    "PHASE1_FILL_CURRENT_PARTIAL_CNN_TABLES/C01_DTD_ResNet50_100ep/C01_full.sh": {
+      "ok": true,
+      "stderr": ""
+    },
+    "PHASE1_FILL_CURRENT_PARTIAL_CNN_TABLES/C01_DTD_ResNet50_100ep/C01_residual.sh": {
+      "ok": true,
+      "stderr": ""
+    },
+    "PHASE1_FILL_CURRENT_PARTIAL_CNN_TABLES/C01_DTD_ResNet50_100ep/C01_ssf.sh": {
+      "ok": true,
+      "stderr": ""
+    },
+    "PHASE1_FILL_CURRENT_PARTIAL_CNN_TABLES/C02_Flowers102_ResNet50_100ep/C02_conv_r2.sh": {
+      "ok": true,
+      "stderr": ""
+    },
+    "PHASE1_FILL_CURRENT_PARTIAL_CNN_TABLES/C02_Flowers102_ResNet50_100ep/C02_conv_r4.sh": {
+      "ok": true,
+      "stderr": ""
+    },
+    "PHASE1_FILL_CURRENT_PARTIAL_CNN_TABLES/C02_Flowers102_ResNet50_100ep/C02_conv_r6.sh": {
+      "ok": true,
+      "stderr": ""
+    },
+    "PHASE1_FILL_CURRENT_PARTIAL_CNN_TABLES/C02_Flowers102_ResNet50_100ep/C02_conv_r8.sh": {
+      "ok": true,
+      "stderr": ""
+    },
+    "PHASE1_FILL_CURRENT_PARTIAL_CNN_TABLES/C02_Flowers102_ResNet50_100ep/C02_dt1d.sh": {
+      "ok": true,
+      "stderr": ""
+    },
+    "PHASE1_FILL_CURRENT_PARTIAL_CNN_TABLES/C02_Flowers102_ResNet50_100ep/C02_full.sh": {
+      "ok": true,
+      "stderr": ""
+    },
+    "PHASE1_FILL_CURRENT_PARTIAL_CNN_TABLES/C02_Flowers102_ResNet50_100ep/C02_residual.sh": {
+      "ok": true,
+      "stderr": ""
+    },
+    "PHASE1_FILL_CURRENT_PARTIAL_CNN_TABLES/C02_Flowers102_ResNet50_100ep/C02_ssf.sh": {
+      "ok": true,
+      "stderr": ""
+    },
+    "PHASE1_FILL_CURRENT_PARTIAL_CNN_TABLES/C03_Flowers102_ResNet18_10ep/C03_bam.sh": {
+      "ok": true,
+      "stderr": ""
+    },
+    "PHASE1_FILL_CURRENT_PARTIAL_CNN_TABLES/C03_Flowers102_ResNet18_10ep/C03_lora_conv.sh": {
+      "ok": true,
+      "stderr": ""
+    },
+    "PHASE1_FILL_CURRENT_PARTIAL_CNN_TABLES/C03_Flowers102_ResNet18_10ep/C03_residual.sh": {
+      "ok": true,
+      "stderr": ""
+    },
+    "PHASE1_FILL_CURRENT_PARTIAL_CNN_TABLES/C03_Flowers102_ResNet18_10ep/C03_sidetune.sh": {
+      "ok": true,
+      "stderr": ""
+    },
+    "PHASE1_FILL_CURRENT_PARTIAL_CNN_TABLES/C11_Pet_EfficientNetB0_100ep/C11_conv_r2.sh": {
+      "ok": true,
+      "stderr": ""
+    },
+    "PHASE1_FILL_CURRENT_PARTIAL_CNN_TABLES/C11_Pet_EfficientNetB0_100ep/C11_conv_r4.sh": {
+      "ok": true,
+      "stderr": ""
+    },
+    "PHASE1_FILL_CURRENT_PARTIAL_CNN_TABLES/C11_Pet_EfficientNetB0_100ep/C11_conv_r6.sh": {
+      "ok": true,
+      "stderr": ""
+    },
+    "PHASE1_FILL_CURRENT_PARTIAL_CNN_TABLES/C11_Pet_EfficientNetB0_100ep/C11_conv_r8.sh": {
+      "ok": true,
+      "stderr": ""
+    },
+    "PHASE1_FILL_CURRENT_PARTIAL_CNN_TABLES/C11_Pet_EfficientNetB0_100ep/C11_dt1d.sh": {
+      "ok": true,
+      "stderr": ""
+    },
+    "PHASE1_FILL_CURRENT_PARTIAL_CNN_TABLES/C11_Pet_EfficientNetB0_100ep/C11_full.sh": {
+      "ok": true,
+      "stderr": ""
+    },
+    "PHASE1_FILL_CURRENT_PARTIAL_CNN_TABLES/C11_Pet_EfficientNetB0_100ep/C11_ssf.sh": {
+      "ok": true,
+      "stderr": ""
+    },
+    "PHASE1_FILL_CURRENT_PARTIAL_CNN_TABLES/C12_Caltech101_ResNet18_10ep/C12_full.sh": {
+      "ok": true,
+      "stderr": ""
+    },
+    "PHASE1_FILL_CURRENT_PARTIAL_CNN_TABLES/C12_Caltech101_ResNet18_10ep/C12_lora_conv.sh": {
+      "ok": true,
+      "stderr": ""
+    },
+    "PHASE1_FILL_CURRENT_PARTIAL_CNN_TABLES/C12_Caltech101_ResNet18_10ep/C12_sidetune.sh": {
+      "ok": true,
+      "stderr": ""
+    },
+    "PHASE1_FILL_CURRENT_PARTIAL_CNN_TABLES/C13_EuroSAT_MobileNetV3Small_25ep/C13_bam.sh": {
+      "ok": true,
+      "stderr": ""
+    },
+    "PHASE1_FILL_CURRENT_PARTIAL_CNN_TABLES/C13_EuroSAT_MobileNetV3Small_25ep/C13_conv_r4.sh": {
+      "ok": true,
+      "stderr": ""
+    },
+    "PHASE1_FILL_CURRENT_PARTIAL_CNN_TABLES/C13_EuroSAT_MobileNetV3Small_25ep/C13_dt1d.sh": {
+      "ok": true,
+      "stderr": ""
+    },
+    "PHASE1_FILL_CURRENT_PARTIAL_CNN_TABLES/C13_EuroSAT_MobileNetV3Small_25ep/C13_full.sh": {
+      "ok": true,
+      "stderr": ""
+    },
+    "PHASE2_NEW_CNN_USPS_MV3_10EP/U01_MERGE_RESULTS.sh": {
+      "ok": true,
+      "stderr": ""
+    },
+    "PHASE2_NEW_CNN_USPS_MV3_10EP/U01_bam.sh": {
+      "ok": true,
+      "stderr": ""
+    },
+    "PHASE2_NEW_CNN_USPS_MV3_10EP/U01_bitfit.sh": {
+      "ok": true,
+      "stderr": ""
+    },
+    "PHASE2_NEW_CNN_USPS_MV3_10EP/U01_conv_r4.sh": {
+      "ok": true,
+      "stderr": ""
+    },
+    "PHASE2_NEW_CNN_USPS_MV3_10EP/U01_dt1d.sh": {
+      "ok": true,
+      "stderr": ""
+    },
+    "PHASE2_NEW_CNN_USPS_MV3_10EP/U01_full.sh": {
+      "ok": true,
+      "stderr": ""
+    },
+    "PHASE2_NEW_CNN_USPS_MV3_10EP/U01_linear.sh": {
+      "ok": true,
+      "stderr": ""
+    },
+    "PHASE2_NEW_CNN_USPS_MV3_10EP/U01_ssf.sh": {
+      "ok": true,
+      "stderr": ""
+    }
+  }
+}

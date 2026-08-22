@@ -1,0 +1,9 @@
+experiment,purpose,empirical/proxy unit runtime,rough full-method 2-GPU wall,assessment
+C01 DTD / ResNet-50 / 100ep,existing partial,~2622 s/run proxy from completed Conv-r6,~6.6 h raw ideal 2-GPU for 18 units,LIKELY FITS; preflight authoritative
+C02 Flowers102 / ResNet-50 / 100ep,existing partial,~1545 s/run proxy from completed BitFit,~3.9 h raw ideal 2-GPU for 18 units,LIKELY FITS
+C03 Flowers102 / ResNet-18 / 10ep,existing partial,~140 s/run proxy,~0.35 h raw ideal 2-GPU for 18 units,FITS comfortably
+C11 Pet / EfficientNet-B0 / 100ep,existing partial,~2139 s/run proxy from completed BitFit,~5.35 h raw ideal 2-GPU for 18 units,LIKELY FITS; DT1D may be slower
+C12 Caltech101 / ResNet-18 / 10ep,existing partial,~368 s/run proxy from DT1D,~0.92 h raw ideal 2-GPU for 18 units,FITS comfortably
+C13 EuroSAT / MobileNetV3-Small / 25ep,existing partial,~1494 s/run proxy from Linear,~3.74 h raw ideal 2-GPU for 18 units,LIKELY FITS
+U01 USPS / MobileNetV3-Small / 10ep,new CNN,no empirical runtime in supplied archive,expected small; exact one-epoch preflight before full work,SAFE PLANNER REFUSES OVER-BUDGET WAVES
+N03 STL10 / DenseNet-121 / 100ep,reserved template,5485.91 s measured per DT1D tuning unit,~13.7 h raw theoretical lower bound on 2 GPUs for 18 units,CANNOT finish one full DT1D method <12h

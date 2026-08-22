@@ -1,0 +1,27 @@
+session,tasks,estimate_or_reason,policy
+SESSION_01,C02_dt1d.sh + C12_full.sh,≈4.8 h raw proxy; shared preflight stops before second task if insufficient,single/adaptive 6h session
+SESSION_02,C02_full.sh + C12_lora_conv.sh,≈4.8 h proxy,single/adaptive 6h session
+SESSION_03,C02_ssf.sh + C12_sidetune.sh,≈4.8 h proxy,single/adaptive 6h session
+SESSION_04,C02_conv_r2.sh + C03_bam.sh,≈4.2 h proxy,single/adaptive 6h session
+SESSION_05,C02_conv_r4.sh + C03_residual.sh,≈4.2 h proxy,single/adaptive 6h session
+SESSION_06,C02_conv_r6.sh + C03_lora_conv.sh,≈4.2 h proxy,single/adaptive 6h session
+SESSION_07,C02_conv_r8.sh + C03_sidetune.sh,≈4.2 h proxy,single/adaptive 6h session
+SESSION_08,C02_residual.sh,≈3.9 h proxy,single/adaptive 6h session
+SESSION_09,C13_dt1d.sh,≈3.7 h proxy,single/adaptive 6h session
+SESSION_10,C13_full.sh,≈3.7 h proxy,single/adaptive 6h session
+SESSION_11,C13_conv_r4.sh,≈3.7 h proxy,single/adaptive 6h session
+SESSION_12,C13_bam.sh,≈3.7 h proxy,single/adaptive 6h session
+SESSION_13,C11_full.sh,≈4.0 h extrapolated; standalone,single/adaptive 6h session
+SESSION_14_NEW_U01,U01_linear.sh + U01_dt1d.sh + U01_bitfit.sh + U01_ssf.sh + U01_conv_r4.sh + U01_bam.sh + U01_full.sh,dataset is small; adaptive shared 5h45 cap; rerun same session with result ZIPs if not all fit,single/adaptive 6h session
+LONG_C11_DT1D,C11_dt1d.sh,likely >6 h raw after extrapolating C10 DT1D/Linear ratio; multi-session,repeat same <=6h session until task complete
+LONG_C11_SSF,C11_ssf.sh,borderline ≈5.8 h raw + setup/profile; not safe to promise <6 h,repeat same <=6h session until task complete
+LONG_C11_CONV_R2,C11_conv_r2.sh,borderline ≈5.5–5.8 h raw + setup/profile,repeat same <=6h session until task complete
+LONG_C11_CONV_R4,C11_conv_r4.sh,borderline ≈5.5–5.8 h raw + setup/profile,repeat same <=6h session until task complete
+LONG_C11_CONV_R6,C11_conv_r6.sh,borderline ≈5.5–5.8 h raw + setup/profile,repeat same <=6h session until task complete
+LONG_C11_CONV_R8,C11_conv_r8.sh,borderline ≈5.5–5.8 h raw + setup/profile,repeat same <=6h session until task complete
+LONG_C01_DT1D,C01_dt1d.sh,C01 proxies are ≈6.0–6.6 h raw before setup; multi-session,repeat same <=6h session until task complete
+LONG_C01_FULL,C01_full.sh,C01 proxies are ≈6.0–6.6 h raw before setup; multi-session,repeat same <=6h session until task complete
+LONG_C01_SSF,C01_ssf.sh,C01 proxies are ≈6.0–6.6 h raw before setup; multi-session,repeat same <=6h session until task complete
+LONG_C01_CONV_R2,C01_conv_r2.sh,C01 proxies are ≈6.0–6.6 h raw before setup; multi-session,repeat same <=6h session until task complete
+LONG_C01_CONV_R4,C01_conv_r4.sh,C01 proxies are ≈6.0–6.6 h raw before setup; multi-session,repeat same <=6h session until task complete
+LONG_C01_RESIDUAL,C01_residual.sh,C01 proxies are ≈6.0–6.6 h raw before setup; multi-session,repeat same <=6h session until task complete
