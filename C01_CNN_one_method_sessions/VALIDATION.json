@@ -1,0 +1,18 @@
+{
+  "shell_scripts_checked": 9,
+  "bash_syntax": "PASS",
+  "python_helpers": "PASS",
+  "old_pack_crc": "PASS",
+  "old_pack_dt1d_importable": true,
+  "pinned_commit": "fda0047228b3cf048ebb43d93f3970574fbef9ef",
+  "methods": [
+    "dt1d",
+    "ssf",
+    "conv_r4",
+    "bam",
+    "residual",
+    "lora_conv",
+    "sidetune",
+    "full"
+  ]
+}
