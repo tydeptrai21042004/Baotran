@@ -1,0 +1,48 @@
+# Kaggle cell index
+
+One `.sh` = one `%%bash` cell/session.
+
+## Phase 1
+- 01: `C03_Flowers102_ResNet18_10ep/C03_bam.sh`
+- 02: `C03_Flowers102_ResNet18_10ep/C03_residual.sh`
+- 03: `C03_Flowers102_ResNet18_10ep/C03_lora_conv.sh`
+- 04: `C03_Flowers102_ResNet18_10ep/C03_sidetune.sh`
+- 05: `C12_Caltech101_ResNet18_10ep/C12_full.sh`
+- 06: `C12_Caltech101_ResNet18_10ep/C12_lora_conv.sh`
+- 07: `C12_Caltech101_ResNet18_10ep/C12_sidetune.sh`
+- 08: `C13_EuroSAT_MobileNetV3Small_25ep/C13_dt1d.sh`
+- 09: `C13_EuroSAT_MobileNetV3Small_25ep/C13_full.sh`
+- 10: `C13_EuroSAT_MobileNetV3Small_25ep/C13_conv_r4.sh`
+- 11: `C13_EuroSAT_MobileNetV3Small_25ep/C13_bam.sh`
+- 12: `C02_Flowers102_ResNet50_100ep/C02_dt1d.sh`
+- 13: `C02_Flowers102_ResNet50_100ep/C02_full.sh`
+- 14: `C02_Flowers102_ResNet50_100ep/C02_ssf.sh`
+- 15: `C02_Flowers102_ResNet50_100ep/C02_conv_r2.sh`
+- 16: `C02_Flowers102_ResNet50_100ep/C02_conv_r4.sh`
+- 17: `C02_Flowers102_ResNet50_100ep/C02_conv_r6.sh`
+- 18: `C02_Flowers102_ResNet50_100ep/C02_conv_r8.sh`
+- 19: `C02_Flowers102_ResNet50_100ep/C02_residual.sh`
+- 20: `C11_Pet_EfficientNetB0_100ep/C11_dt1d.sh`
+- 21: `C11_Pet_EfficientNetB0_100ep/C11_full.sh`
+- 22: `C11_Pet_EfficientNetB0_100ep/C11_ssf.sh`
+- 23: `C11_Pet_EfficientNetB0_100ep/C11_conv_r2.sh`
+- 24: `C11_Pet_EfficientNetB0_100ep/C11_conv_r4.sh`
+- 25: `C11_Pet_EfficientNetB0_100ep/C11_conv_r6.sh`
+- 26: `C11_Pet_EfficientNetB0_100ep/C11_conv_r8.sh`
+- 27: `C01_DTD_ResNet50_100ep/C01_dt1d.sh`
+- 28: `C01_DTD_ResNet50_100ep/C01_full.sh`
+- 29: `C01_DTD_ResNet50_100ep/C01_ssf.sh`
+- 30: `C01_DTD_ResNet50_100ep/C01_conv_r2.sh`
+- 31: `C01_DTD_ResNet50_100ep/C01_conv_r4.sh`
+- 32: `C01_DTD_ResNet50_100ep/C01_residual.sh`
+
+## Phase 2
+- 01: `PHASE2_NEW_CNN_USPS_MV3_10EP/U01_linear.sh`
+- 02: `PHASE2_NEW_CNN_USPS_MV3_10EP/U01_dt1d.sh`
+- 03: `PHASE2_NEW_CNN_USPS_MV3_10EP/U01_bitfit.sh`
+- 04: `PHASE2_NEW_CNN_USPS_MV3_10EP/U01_ssf.sh`
+- 05: `PHASE2_NEW_CNN_USPS_MV3_10EP/U01_conv_r4.sh`
+- 06: `PHASE2_NEW_CNN_USPS_MV3_10EP/U01_bam.sh`
+- 07: `PHASE2_NEW_CNN_USPS_MV3_10EP/U01_full.sh`
+
+After all U01 methods: `PHASE2_NEW_CNN_USPS_MV3_10EP/U01_MERGE_RESULTS.sh`
