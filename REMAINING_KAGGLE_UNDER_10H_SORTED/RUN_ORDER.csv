@@ -1,0 +1,30 @@
+order,session,task_id,experiment,estimate,resume_required,notes
+1,sessions/01_C03_bam.sh,C03_bam,Flowers102 / ResNet-18 / 10 ep,0.3–0.7 h,no,C03 BAM
+2,sessions/02_C03_residual.sh,C03_residual,Flowers102 / ResNet-18 / 10 ep,0.3–0.7 h,no,C03 Residual
+3,sessions/03_C03_lora_conv.sh,C03_lora_conv,Flowers102 / ResNet-18 / 10 ep,0.3–0.8 h,no,C03 LoRA-Conv
+4,sessions/04_C03_sidetune.sh,C03_sidetune,Flowers102 / ResNet-18 / 10 ep,0.3–0.8 h,no,C03 Side-Tuning
+5,sessions/05_U01_USPS_MV3_10EP_linear.sh,U01_USPS_MV3_10EP_linear,USPS / MobileNetV3-Small / 10 ep,0.7–1.4 h,no,U01 Linear
+6,sessions/06_U01_USPS_MV3_10EP_bitfit.sh,U01_USPS_MV3_10EP_bitfit,USPS / MobileNetV3-Small / 10 ep,0.7–1.4 h,no,U01 BitFit
+7,sessions/07_U01_USPS_MV3_10EP_ssf.sh,U01_USPS_MV3_10EP_ssf,USPS / MobileNetV3-Small / 10 ep,0.7–1.4 h,no,U01 SSF
+8,sessions/08_U01_USPS_MV3_10EP_full.sh,U01_USPS_MV3_10EP_full,USPS / MobileNetV3-Small / 10 ep,0.8–1.6 h,no,U01 Full
+9,sessions/09_U01_USPS_MV3_10EP_dt1d.sh,U01_USPS_MV3_10EP_dt1d,USPS / MobileNetV3-Small / 10 ep,0.8–1.6 h,no,U01 DT1D
+10,sessions/10_U01_USPS_MV3_10EP_conv_r4.sh,U01_USPS_MV3_10EP_conv_r4,USPS / MobileNetV3-Small / 10 ep,0.8–1.6 h,no,U01 Conv-r4
+11,sessions/11_C12_full.sh,C12_full,Caltech101 / ResNet-18 / 10 ep,0.9–1.6 h,no,C12 Full
+12,sessions/12_C12_sidetune.sh,C12_sidetune,Caltech101 / ResNet-18 / 10 ep,0.9–1.7 h,no,C12 Side-Tuning
+13,sessions/13_C12_lora_conv.sh,C12_lora_conv,Caltech101 / ResNet-18 / 10 ep; NaN LR is skipped safely,0.9–1.8 h,no,C12 LoRA-Conv
+14,sessions/14_C13_full.sh,C13_full,EuroSAT / MobileNetV3-Small / 25 ep,3.5–5.0 h,no,C13 Full
+15,sessions/15_C13_bam.sh,C13_bam,EuroSAT / MobileNetV3-Small / 25 ep,3.5–5.0 h,no,C13 BAM
+16,sessions/16_C13_conv_r4.sh,C13_conv_r4,EuroSAT / MobileNetV3-Small / 25 ep,3.5–5.2 h,no,C13 Conv-r4
+17,sessions/17_C13_dt1d.sh,C13_dt1d,EuroSAT / MobileNetV3-Small / 25 ep,3.7–5.5 h,no,C13 DT1D
+18,sessions/18_C02_conv_r8.sh,C02_conv_r8,Flowers102 / ResNet-50 / 100 ep,3.8–5.3 h,no,C02 Conv-r8
+19,sessions/19_C02_conv_r6.sh,C02_conv_r6,Flowers102 / ResNet-50 / 100 ep,3.8–5.3 h,no,C02 Conv-r6
+20,sessions/20_C02_conv_r4.sh,C02_conv_r4,Flowers102 / ResNet-50 / 100 ep,3.8–5.4 h,no,C02 Conv-r4
+21,sessions/21_C02_conv_r2.sh,C02_conv_r2,Flowers102 / ResNet-50 / 100 ep,3.9–5.5 h,no,C02 Conv-r2
+22,sessions/22_C02_residual.sh,C02_residual,Flowers102 / ResNet-50 / 100 ep,3.9–5.5 h,no,C02 Residual
+23,sessions/23_C02_dt1d.sh,C02_dt1d,Flowers102 / ResNet-50 / 100 ep; attach C02_dt1d_results(1).zip,4.0–5.5 h remaining,YES,C02 DT1D RESUME
+24,sessions/24_C01_ssf.sh,C01_ssf,DTD / ResNet-50 / 100 ep,6.0–8.5 h,no,C01 SSF
+25,sessions/25_C01_residual.sh,C01_residual,DTD / ResNet-50 / 100 ep,6.0–8.5 h,no,C01 Residual
+26,sessions/26_C01_conv_r4.sh,C01_conv_r4,DTD / ResNet-50 / 100 ep,6.0–8.7 h,no,C01 Conv-r4
+27,sessions/27_C01_conv_r2.sh,C01_conv_r2,DTD / ResNet-50 / 100 ep,6.1–8.8 h,no,C01 Conv-r2
+28,sessions/28_C01_full.sh,C01_full,DTD / ResNet-50 / 100 ep,6.2–9.0 h,no,C01 Full
+29,sessions/29_C01_dt1d.sh,C01_dt1d,DTD / ResNet-50 / 100 ep,6.3–9.2 h,no,C01 DT1D
