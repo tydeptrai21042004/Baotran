@@ -1,0 +1,479 @@
+%%bash
+set -Eeuo pipefail
+
+# ============================================================
+# INDEPENDENT KAGGLE SESSION — ONE EXPERIMENT / ONE CELL
+# Experiment : DTD_R50_100ep
+# Dataset    : dtd
+# Backbone   : resnet50
+# Epochs     : 100
+# Batch size : 128
+# Seeds      : 0,1,2
+# Missing canonical methods in this experiment:
+#   dt1d,full,ssf,conv_r4,bam,residual,lora_conv,sidetune
+# Runtime note: EXPECTED OVER 12H as one full experiment-level cell. Resume by attaching the previous result ZIP and rerunning the SAME cell.
+#
+# Canonical CNN family used by the paper:
+#   DT1D, Full, Linear, BitFit, SSF, Conv-r4, BAM,
+#   Residual Adapter, LoRA-Conv, Side-Tuning.
+#
+# This cell is independent: it clones the repository, applies the
+# validated Side-Tuning + LR-search fixes, validates, smoke-tests,
+# downloads data/weights, trains, and packages results by itself.
+# HARD SESSION GUARD: at 11h20m (40,800 s) from cell start, active
+# training process groups are terminated and two ZIPs are exported:
+#   *_results.zip            = resumable full state (including partial work)
+#   *_DONE_ONLY_results.zip  = only methods complete for ALL requested seeds
+# ============================================================
+
+JOB="DTD_R50_100ep"
+BASE_CONFIG="table_03.yaml"
+EXPERIMENT_ID="table_03"
+METHODS_CSV="dt1d,full,ssf,conv_r4,bam,residual,lora_conv,sidetune"
+SEEDS_CSV="0,1,2"
+DATASET="dtd"
+BACKBONE="resnet50"
+EPOCHS=100
+BATCH_SIZE=128
+
+REPO_URL="${DT1D_CNN_REPO_URL:-https://github.com/tydeptrai21042004/whc-dt1d.git}"
+REPO_COMMIT="${DT1D_CNN_COMMIT:-fda0047228b3cf048ebb43d93f3970574fbef9ef}"
+WORK="/kaggle/working"
+REPO="$WORK/whc-dt1d-$JOB"
+STATE="$WORK/${JOB}_state"
+CONFIG="$STATE/experiment.yaml"
+ZIP="$WORK/${JOB}_results.zip"
+DONE_ZIP="$WORK/${JOB}_DONE_ONLY_results.zip"
+DATA="$WORK/data_$JOB"
+
+# 11h20m = 40,800 seconds. The deadline is measured from CELL START,
+# not from the beginning of model training.
+CELL_BUDGET_SECONDS=40800
+CELL_START_TS=$(date +%s)
+CELL_DEADLINE_TS=$((CELL_START_TS + CELL_BUDGET_SECONDS))
+TIMEOUT_FLAG="$STATE/WALLCLOCK_11H20_REACHED.txt"
+ACTIVE_PGIDS_FILE="$STATE/ACTIVE_TRAINING_PGIDS.txt"
+WATCHDOG_PID=""
+
+export JOB BASE_CONFIG EXPERIMENT_ID METHODS_CSV SEEDS_CSV DATASET BACKBONE EPOCHS BATCH_SIZE REPO STATE CONFIG ZIP DONE_ZIP DATA
+export CELL_BUDGET_SECONDS CELL_START_TS CELL_DEADLINE_TS TIMEOUT_FLAG ACTIVE_PGIDS_FILE
+
+pack_results() {
+  [[ -d "$STATE" ]] || return 0
+  python - <<'PYZIP'
+import os, zipfile
+from pathlib import Path
+root=Path(os.environ["STATE"]); dst=Path(os.environ["ZIP"])
+tmp=dst.with_name(dst.name+f".tmp.{os.getpid()}")
+tmp.unlink(missing_ok=True)
+with zipfile.ZipFile(tmp,"w",zipfile.ZIP_DEFLATED,compresslevel=6) as z:
+    for p in root.rglob("*"):
+        if p.is_file() and p.suffix.lower() not in {".pth",".pt",".ckpt"}:
+            z.write(p,p.relative_to(root.parent))
+tmp.replace(dst)
+print("PACKED RESUMABLE STATE:",dst)
+PYZIP
+  ls -lh "$ZIP" || true
+}
+
+# At the 11h20 cutoff, this second archive contains ONLY methods that
+# have final test_summary.json for every requested seed. This prevents
+# a partially trained method from being mistaken for a completed result.
+pack_done_results() {
+  mkdir -p "$STATE"
+  python - <<'PYDONE'
+import json, os, zipfile
+from pathlib import Path
+state=Path(os.environ["STATE"])
+dst=Path(os.environ["DONE_ZIP"])
+target=os.environ["EXPERIMENT_ID"]
+methods=[x for x in os.environ["METHODS_CSV"].split(",") if x]
+seeds=[int(x) for x in os.environ["SEEDS_CSV"].split(",") if x]
+start=int(os.environ["CELL_START_TS"])
+now=int(__import__('time').time())
+status={}
+complete=[]
+for method in methods:
+    root=state/"outputs"/method/target/method
+    ok=all((root/f"seed_{seed}"/"test_summary.json").is_file() for seed in seeds)
+    status[method]={"complete":bool(ok),"method_root":str(root)}
+    if ok: complete.append((method,root))
+
+tmp=dst.with_name(dst.name+f".tmp.{os.getpid()}")
+tmp.unlink(missing_ok=True)
+with zipfile.ZipFile(tmp,"w",zipfile.ZIP_DEFLATED,compresslevel=6) as z:
+    manifest={
+        "job":os.environ["JOB"],
+        "experiment_id":target,
+        "requested_methods":methods,
+        "requested_seeds":seeds,
+        "elapsed_seconds":now-start,
+        "budget_seconds":int(os.environ["CELL_BUDGET_SECONDS"]),
+        "complete_methods":[m for m,_ in complete],
+        "status":status,
+    }
+    z.writestr("DONE_ONLY_MANIFEST.json",json.dumps(manifest,indent=2)+"\n")
+    cfg=Path(os.environ["CONFIG"])
+    if cfg.is_file(): z.write(cfg,"experiment.yaml")
+    for method,root in complete:
+        for p in root.rglob("*"):
+            if p.is_file() and p.suffix.lower() not in {".pth",".pt",".ckpt"}:
+                z.write(p,Path(target)/method/p.relative_to(root))
+        log=state/"logs"/f"{method}.log"
+        if log.is_file(): z.write(log,Path("logs")/log.name)
+tmp.replace(dst)
+print("PACKED DONE-ONLY:",dst)
+print("COMPLETE METHODS:",[m for m,_ in complete])
+PYDONE
+  ls -lh "$DONE_ZIP" || true
+}
+
+pack_all_exports() {
+  pack_results || true
+  pack_done_results || true
+}
+
+stop_active_training_groups() {
+  [[ -f "$ACTIVE_PGIDS_FILE" ]] || return 0
+  mapfile -t _pgids < "$ACTIVE_PGIDS_FILE" || true
+  for pgid in "${_pgids[@]:-}"; do
+    [[ "$pgid" =~ ^[0-9]+$ ]] || continue
+    kill -TERM -- "-$pgid" 2>/dev/null || true
+  done
+  sleep 20
+  for pgid in "${_pgids[@]:-}"; do
+    [[ "$pgid" =~ ^[0-9]+$ ]] || continue
+    kill -KILL -- "-$pgid" 2>/dev/null || true
+  done
+}
+
+watchdog_11h20() {
+  local now remaining
+  now=$(date +%s)
+  remaining=$((CELL_DEADLINE_TS - now))
+  if (( remaining > 0 )); then sleep "$remaining"; fi
+  mkdir -p "$STATE"
+  {
+    echo "11h20 wall-clock limit reached"
+    echo "cell_start_epoch=$CELL_START_TS"
+    echo "deadline_epoch=$CELL_DEADLINE_TS"
+    echo "reached_epoch=$(date +%s)"
+  } > "$TIMEOUT_FLAG"
+  echo
+  echo "============================================================"
+  echo "11h20 LIMIT REACHED — stopping active training safely"
+  echo "Completed methods will be exported immediately."
+  echo "============================================================"
+  stop_active_training_groups
+  # Export immediately from the watchdog itself. ZIP creation is atomic,
+  # so a simultaneous end-of-wave checkpoint cannot leave a corrupt archive.
+  pack_all_exports || true
+  echo "11h20 AUTO-EXPORT COMPLETE: $DONE_ZIP"
+  echo "11h20 RESUMABLE STATE:     $ZIP"
+}
+
+on_exit() {
+  local rc=$?
+  trap - EXIT
+  if [[ -n "${WATCHDOG_PID:-}" ]]; then kill "$WATCHDOG_PID" 2>/dev/null || true; fi
+  pack_all_exports || true
+  exit "$rc"
+}
+trap on_exit EXIT
+
+echo "JOB=$JOB | $DATASET | $BACKBONE | ${EPOCHS}ep | methods=$METHODS_CSV | seeds=$SEEDS_CSV"
+
+mkdir -p "$STATE"
+python - <<'PYRESTORE'
+import os, zipfile
+from pathlib import Path
+job=os.environ["JOB"]; inp=Path("/kaggle/input"); work=Path("/kaggle/working")
+matches=list(inp.rglob(f"{job}_results.zip")) if inp.exists() else []
+if matches:
+    z=max(matches,key=lambda p:p.stat().st_mtime)
+    with zipfile.ZipFile(z) as f: f.extractall(work)
+    print("RESTORED",z)
+else:
+    print("No previous result ZIP attached.")
+PYRESTORE
+
+# A restored state may contain the previous session's timeout marker.
+# Every fresh Kaggle cell receives a NEW 11h20 budget.
+rm -f "$TIMEOUT_FLAG"
+: > "$ACTIVE_PGIDS_FILE"
+watchdog_11h20 &
+WATCHDOG_PID=$!
+echo "11h20 watchdog PID=$WATCHDOG_PID | deadline epoch=$CELL_DEADLINE_TS"
+
+rm -rf "$REPO"
+for n in 1 2 3; do
+  git clone "$REPO_URL" "$REPO" && break
+  rm -rf "$REPO"; sleep $((n*5))
+done
+[[ -d "$REPO/.git" ]] || { echo "clone failed"; exit 2; }
+cd "$REPO"
+git fetch origin "$REPO_COMMIT" || true
+git checkout --detach "$REPO_COMMIT"
+echo "SOURCE_COMMIT=$(git rev-parse HEAD)"
+
+python -m pip install -q --upgrade-strategy only-if-needed \
+  timm==1.0.15 thop==0.1.1.post2209072238 fvcore==0.1.5.post20221221
+
+python - <<'PYENV'
+import torch
+assert torch.cuda.is_available(), "Enable Kaggle GPU accelerator."
+print("Torch",torch.__version__,"CUDA",torch.version.cuda,"GPU count",torch.cuda.device_count())
+for i in range(torch.cuda.device_count()): print(i,torch.cuda.get_device_name(i))
+PYENV
+
+python - <<'PYPATCH'
+import os
+from pathlib import Path
+repo=Path(os.environ["REPO"])
+
+# Side-Tuning: fix checkpoint gradients + EfficientNet/MobileNet pre-classifier features.
+p=repo/"models/tuning_modules/side_tuning.py"
+t=p.read_text(encoding="utf-8")
+t=t.replace("side = checkpoint(self.side_net, x)",
+            "side = checkpoint(self.side_net, x, use_reentrant=False)")
+old="""            if isinstance(clf, nn.Sequential):
+                for m in reversed(clf):
+                    if isinstance(m, nn.Linear):
+                        return int(m.in_features)
+"""
+new="""            if isinstance(clf, nn.Sequential):
+                for m in clf:
+                    if isinstance(m, nn.Linear):
+                        return int(m.in_features)
+"""
+if old in t: t=t.replace(old,new)
+old="""            elif hasattr(self.base, "forward_features"):
+                out = self.base.forward_features(x)
+            else:
+                out = self.base(x)
+        if out.dim() == 4:
+            out = self.pool(out).flatten(1)
+        return out
+"""
+new="""            elif hasattr(self.base, "forward_features"):
+                out = self.base.forward_features(x)
+            elif hasattr(self.base, "features"):
+                out = self.base.features(x)
+                if hasattr(self.base, "avgpool"):
+                    out = self.base.avgpool(out)
+            else:
+                out = self.base(x)
+        if out.dim() == 4:
+            out = self.pool(out).flatten(1)
+        elif out.dim() > 2:
+            out = torch.flatten(out, 1)
+        return out
+"""
+if old in t:
+    t=t.replace(old,new)
+elif 'elif hasattr(self.base, "features"):' not in t:
+    raise RuntimeError("Unexpected side_tuning.py layout")
+p.write_text(t,encoding="utf-8")
+
+# LR policy: all candidates attempted; genuine non-finite-loss candidates invalidate that LR.
+p=repo/"tools/run_experiment.py"
+t=p.read_text(encoding="utf-8")
+start=t.index("def select_shared_lr("); end=t.index("\n\ndef candidate_for(",start)
+new_func=r"""def select_shared_lr(candidate_rows: list[dict[str, Any]], *, seeds: list[int], lr_candidates: list[float]) -> dict[str, Any]:
+    expected={(int(s),float(lr)) for s in seeds for lr in lr_candidates}
+    observed={(int(r["seed"]),float(r["lr"])) for r in candidate_rows}
+    if observed != expected or len(candidate_rows) != len(expected):
+        raise RuntimeError(f"Fair LR search incomplete/duplicated: missing={sorted(expected-observed)} extra={sorted(observed-expected)}")
+    def good(r):
+        try: v=float(r.get("best_val_acc1",float("nan")))
+        except (TypeError,ValueError): return False
+        return int(r.get("return_code",1)) == 0 and math.isfinite(v)
+    def numerical(r):
+        if good(r): return False
+        rc=int(r.get("return_code",1))
+        if rc == 0: return True
+        lp=Path(str(r.get("output_dir","")))/"stdout.log"
+        log=lp.read_text(encoding="utf-8",errors="ignore") if lp.is_file() else ""
+        if "Loss is not finite" in log or "FloatingPointError: Loss is not finite" in log:
+            return True
+        raise RuntimeError(f"Non-numerical candidate failure seed={r.get('seed')} lr={r.get('lr')} rc={rc}; inspect {lp}")
+    invalid=[r for r in candidate_rows if numerical(r)]
+    aggs=[]; eligible=[]
+    for lr in lr_candidates:
+        rows=sorted([r for r in candidate_rows if float(r["lr"])==float(lr)],key=lambda r:int(r["seed"]))
+        valid=all(good(r) for r in rows)
+        vals=[float(r["best_val_acc1"]) for r in rows] if valid else []
+        a={"lr":float(lr),"valid":valid,
+           "mean_best_val_acc1":float(statistics.mean(vals)) if valid else None,
+           "std_best_val_acc1":float(statistics.stdev(vals)) if valid and len(vals)>1 else (0.0 if valid else None),
+           "per_seed_best_val_acc1":{str(int(r["seed"])):(float(r["best_val_acc1"]) if good(r) else None) for r in rows},
+           "per_seed_best_epoch":{str(int(r["seed"])):int(r.get("best_epoch",-1)) for r in rows},
+           "per_seed_return_code":{str(int(r["seed"])):int(r.get("return_code",1)) for r in rows}}
+        aggs.append(a)
+        if valid: eligible.append(a)
+    if not eligible: raise RuntimeError("No LR completed successfully for every requested seed.")
+    sel=max(eligible,key=lambda a:(float(a["mean_best_val_acc1"]),-float(a["lr"])))
+    return {"selection_scope":"method_across_seeds","aggregation":"mean_best_val_acc1","tie_break":"lower_lr",
+            "failed_candidate_policy":"attempt_all_mark_numerical_invalid","all_declared_candidates_attempted":True,
+            "seeds":[int(s) for s in seeds],"lr_candidates":[float(lr) for lr in lr_candidates],
+            "numerical_invalid_candidates":[{"seed":int(r["seed"]),"lr":float(r["lr"]),"return_code":int(r.get("return_code",1))} for r in invalid],
+            "candidates":aggs,"selected_lr":float(sel["lr"]),
+            "selected_mean_best_val_acc1":float(sel["mean_best_val_acc1"])}
+"""
+t=t[:start]+new_func+t[end:]
+p.write_text(t,encoding="utf-8")
+print("PATCHES APPLIED")
+PYPATCH
+
+python - <<'PYCFG'
+import copy, os, yaml
+from pathlib import Path
+repo=Path(os.environ["REPO"])
+cfg=yaml.safe_load((repo/"configs/experiments"/os.environ["BASE_CONFIG"]).read_text(encoding="utf-8"))
+defs=yaml.safe_load((repo/"configs/experiments/table_14_15.yaml").read_text(encoding="utf-8"))["methods"]
+cfg["experiment_id"]=os.environ["EXPERIMENT_ID"]
+cfg["dataset"]=os.environ["DATASET"]; cfg["backbone"]=os.environ["BACKBONE"]
+cfg["epochs"]=int(os.environ["EPOCHS"]); cfg["batch_size"]=int(os.environ["BATCH_SIZE"])
+cfg["seeds"]=[int(x) for x in os.environ["SEEDS_CSV"].split(",") if x]
+canonical=["dt1d","full","linear","bitfit","ssf","conv_r4","bam","residual","lora_conv","sidetune"]
+for m in canonical:
+    if m not in cfg["methods"]: cfg["methods"][m]=copy.deepcopy(defs[m])
+cfg["method_order"]=canonical
+cfg["fairness"]["failed_candidate_policy"]="attempt_all_mark_numerical_invalid"
+out=Path(os.environ["CONFIG"]); out.parent.mkdir(parents=True,exist_ok=True)
+out.write_text(yaml.safe_dump(cfg,sort_keys=False),encoding="utf-8")
+assert [float(x) for x in cfg["fairness"]["lr_candidates"]] == [1e-4,3e-4,1e-3,3e-3,5e-3]
+for m in os.environ["METHODS_CSV"].split(","): assert m in cfg["methods"]
+print("CONFIG VERIFIED",cfg["experiment_id"],cfg["dataset"],cfg["backbone"],cfg["epochs"],cfg["batch_size"],cfg["seeds"])
+PYCFG
+
+python tools/validate_dt1d.py
+python tools/validate_all_configs.py
+
+# CPU end-to-end smoke test catches method/backbone integration errors before GPU work.
+rm -rf "$STATE/smoke"
+python tools/run_experiment.py "$CONFIG" \
+  --methods "$METHODS_CSV" --seeds "${SEEDS_CSV%%,*}" \
+  --output-root "$STATE/smoke" --data-path "$DATA" --device cpu --smoke
+
+mkdir -p "$DATA"
+python - <<'PYPRELOAD'
+import os
+from torchvision import datasets, models
+root=os.environ["DATA"]; ds=os.environ["DATASET"]; bb=os.environ["BACKBONE"]
+if ds=="fgvc_aircraft":
+    [datasets.FGVCAircraft(root=root,split=s,download=True) for s in ("train","val","test")]
+elif ds=="caltech101": datasets.Caltech101(root=root,download=True)
+elif ds=="usps":
+    datasets.USPS(root=root,train=True,download=True); datasets.USPS(root=root,train=False,download=True)
+elif ds=="oxford_iiit_pet":
+    datasets.OxfordIIITPet(root=root,split="trainval",download=True); datasets.OxfordIIITPet(root=root,split="test",download=True)
+elif ds=="eurosat": datasets.EuroSAT(root=root,download=True)
+elif ds=="flowers102":
+    [datasets.Flowers102(root=root,split=s,download=True) for s in ("train","val","test")]
+elif ds=="dtd":
+    [datasets.DTD(root=root,split=s,download=True) for s in ("train","val","test")]
+else: raise RuntimeError(ds)
+getattr(models,bb)(weights="DEFAULT")
+print("PRELOAD PASS",ds,bb)
+PYPRELOAD
+
+python tools/run_experiment.py "$CONFIG" \
+  --methods "$METHODS_CSV" --seeds "$SEEDS_CSV" \
+  --output-root "$STATE/plan" --data-path "$DATA" --device cuda:0 --plan-only
+
+mkdir -p "$STATE/outputs" "$STATE/logs"
+IFS=',' read -ra METHODS <<< "$METHODS_CSV"
+GPU_COUNT=$(python - <<'PYGPU'
+import torch
+print(torch.cuda.device_count())
+PYGPU
+)
+[[ "$GPU_COUNT" -ge 1 ]] || exit 3
+if [[ "$GPU_COUNT" -ge 2 ]]; then WAVE=2; else WAVE=1; fi
+
+launch_one() {
+  local method="$1" device="$2" out="$STATE/outputs/$1" log="$STATE/logs/$1.log"
+  mkdir -p "$out"
+  # setsid gives each method its own process group so the 11h20 watchdog
+  # can stop Python + tee + descendants without touching the notebook shell.
+  setsid bash -c '
+    set -Eeuo pipefail
+    method="$1"; device="$2"; out="$3"; log="$4"
+    python "$REPO/tools/run_experiment.py" "$CONFIG" \
+      --methods "$method" --seeds "$SEEDS_CSV" \
+      --output-root "$out" --data-path "$DATA" --device "$device" --skip-if-complete \
+      2>&1 | tee "$log"
+  ' _ "$method" "$device" "$out" "$log" &
+  LAST_LAUNCH_PID=$!
+}
+
+for ((i=0; i<${#METHODS[@]}; i+=WAVE)); do
+  now=$(date +%s)
+  if (( now >= CELL_DEADLINE_TS )); then
+    [[ -f "$TIMEOUT_FLAG" ]] || echo "11h20 wall-clock limit reached before next wave" > "$TIMEOUT_FLAG"
+    pack_all_exports
+    echo "STOPPED AT 11h20. DONE ZIP: $DONE_ZIP"
+    echo "RESUME ZIP: $ZIP"
+    if [[ -n "${WATCHDOG_PID:-}" ]]; then kill "$WATCHDOG_PID" 2>/dev/null || true; fi
+    trap - EXIT
+    exit 124
+  fi
+  echo "Remaining cell budget: $((CELL_DEADLINE_TS-now)) seconds"
+
+  pids=(); names=()
+  for ((j=0; j<WAVE && i+j<${#METHODS[@]}; j++)); do
+    m="${METHODS[i+j]}"
+    launch_one "$m" "cuda:$j"
+    pids+=("$LAST_LAUNCH_PID"); names+=("$m")
+  done
+  printf '%s\n' "${pids[@]}" > "$ACTIVE_PGIDS_FILE"
+
+  set +e; wave_rc=0
+  for k in "${!pids[@]}"; do
+    wait "${pids[$k]}"; rc=$?
+    if [[ "$rc" -ne 0 ]]; then echo "STOP/FAIL ${names[$k]} rc=$rc"; wave_rc=$rc; fi
+  done
+  set -e
+  : > "$ACTIVE_PGIDS_FILE"
+
+  # Always checkpoint the session after each wave.
+  pack_all_exports
+
+  # The watchdog deliberately kills the active groups at 11h20. In that
+  # case export completed methods and exit cleanly with a distinct code.
+  if [[ -f "$TIMEOUT_FLAG" ]]; then
+    echo "11h20 guard activated. No new methods will be launched."
+    echo "DONE ZIP: $DONE_ZIP"
+    echo "RESUME ZIP: $ZIP"
+    if [[ -n "${WATCHDOG_PID:-}" ]]; then kill "$WATCHDOG_PID" 2>/dev/null || true; fi
+    trap - EXIT
+    exit 124
+  fi
+
+  [[ "$wave_rc" -eq 0 ]] || exit "$wave_rc"
+done
+
+python - <<'PYMERGE'
+import json, os, shutil
+from pathlib import Path
+state=Path(os.environ["STATE"]); target=os.environ["EXPERIMENT_ID"]
+methods=os.environ["METHODS_CSV"].split(","); seeds=[int(x) for x in os.environ["SEEDS_CSV"].split(",")]
+combined=state/"combined"/target; combined.mkdir(parents=True,exist_ok=True)
+status={}
+for m in methods:
+    src=state/"outputs"/m/target/m; dst=combined/m
+    if src.is_dir():
+        shutil.rmtree(dst,ignore_errors=True); shutil.copytree(src,dst)
+    complete=all((src/f"seed_{s}"/"test_summary.json").is_file() for s in seeds)
+    status[m]={"complete":complete,"source":str(src)}
+(state/"STATUS.json").write_text(json.dumps(status,indent=2)+"\n")
+print(json.dumps(status,indent=2))
+if not all(v["complete"] for v in status.values()): raise SystemExit("Incomplete method(s)")
+PYMERGE
+
+if [[ -n "${WATCHDOG_PID:-}" ]]; then kill "$WATCHDOG_PID" 2>/dev/null || true; fi
+trap - EXIT
+pack_all_exports
+echo "SUCCESS RESUMABLE ZIP: $ZIP"
+echo "SUCCESS DONE-ONLY ZIP: $DONE_ZIP"
