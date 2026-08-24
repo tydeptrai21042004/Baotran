@@ -1,0 +1,49 @@
+FASTEST -> SLOWEST APPROXIMATE RUN ORDER
+
+Grouping policy:
+- If a same-experiment chunk is expected to finish in under about 6 hours,
+  multiple missing methods are grouped into one cell.
+- If the full validation-only 5-LR x 3-seed sweep is likely to exceed ~6 hours,
+  the method remains in its own cell.
+- Every cell still has the 11h20 hard wall-clock guard and current-done ZIP export.
+- Runtime is an estimate; Kaggle GPU assignment, caching, download time, and
+  LR divergence can change wall time.
+
+001. U01_USPS_MV3S_10ep | residual,lora_conv,sidetune | <6h expected: all three currently blank U01 rows grouped
+002. N02_Flowers17_MV3S_10ep | linear,bitfit,ssf,residual,bam,lora_conv,conv_r4,dt1d,full,sidetune | <6h expected: entire blank N02 experiment grouped
+003. N01_STL10_EffB0_10ep | linear,bitfit,ssf,residual,bam | <6h expected: N01 fast half grouped
+004. N01_STL10_EffB0_10ep | lora_conv,conv_r4,dt1d,full,sidetune | <6h expected: N01 heavier half grouped
+005. N04_Flowers17_R18_100ep | linear,bitfit,ssf,residual,bam | <6h expected on tiny Flowers17 split: N04 fast half grouped
+006. N04_Flowers17_R18_100ep | lora_conv,conv_r4,dt1d,full,sidetune | <6h expected on tiny Flowers17 split: N04 heavier half grouped
+007. C13_EuroSAT_MV3S_25ep | bam | >6h possible under full 5-LR × 3-seed sweep: kept separate
+008. C13_EuroSAT_MV3S_25ep | conv_r4 | >6h possible under full 5-LR × 3-seed sweep: kept separate
+009. C13_EuroSAT_MV3S_25ep | dt1d | >6h possible under full 5-LR × 3-seed sweep: kept separate
+010. T04_Flowers102_R50_100ep | residual | >6h expected: one method per cell
+011. T04_Flowers102_R50_100ep | conv_r8 | >6h expected: one method per cell
+012. T04_Flowers102_R50_100ep | conv_r6 | >6h expected: one method per cell
+013. T04_Flowers102_R50_100ep | conv_r4 | >6h expected: one method per cell
+014. T04_Flowers102_R50_100ep | conv_r2 | >6h expected: one method per cell
+015. T04_Flowers102_R50_100ep | dt1d | >6h expected: one method per cell
+016. C11_Pet_EffB0_100ep | full | >6h expected under validation sweep: one method per cell
+017. C11_Pet_EffB0_100ep | ssf | >6h expected under validation sweep: one method per cell
+018. C11_Pet_EffB0_100ep | conv_r8 | >6h expected under validation sweep: one method per cell
+019. C11_Pet_EffB0_100ep | conv_r6 | >6h expected under validation sweep: one method per cell
+020. C11_Pet_EffB0_100ep | conv_r4 | >6h expected under validation sweep: one method per cell
+021. C11_Pet_EffB0_100ep | conv_r2 | >6h expected under validation sweep: one method per cell
+022. C11_Pet_EffB0_100ep | dt1d | >6h expected under validation sweep: one method per cell
+023. T03_DTD_R50_100ep | full | >6h expected: one method per cell
+024. T03_DTD_R50_100ep | ssf | >6h expected: one method per cell
+025. T03_DTD_R50_100ep | residual | >6h expected: one method per cell
+026. T03_DTD_R50_100ep | conv_r4 | >6h expected: one method per cell
+027. T03_DTD_R50_100ep | conv_r2 | >6h expected: one method per cell
+028. T03_DTD_R50_100ep | dt1d | >6h expected: one method per cell
+029. N03_STL10_DenseNet121_100ep | linear | >6h possible/heavy: one method per cell
+030. N03_STL10_DenseNet121_100ep | bitfit | >6h possible/heavy: one method per cell
+031. N03_STL10_DenseNet121_100ep | ssf | >6h possible/heavy: one method per cell
+032. N03_STL10_DenseNet121_100ep | residual | >6h possible/heavy: one method per cell
+033. N03_STL10_DenseNet121_100ep | bam | >6h possible/heavy: one method per cell
+034. N03_STL10_DenseNet121_100ep | lora_conv | >6h possible/heavy: one method per cell
+035. N03_STL10_DenseNet121_100ep | conv_r4 | >6h possible/heavy: one method per cell
+036. N03_STL10_DenseNet121_100ep | dt1d | >6h possible/heavy: one method per cell
+037. N03_STL10_DenseNet121_100ep | full | >6h possible/heavy: one method per cell
+038. N03_STL10_DenseNet121_100ep | sidetune | >6h possible/heavy: one method per cell
