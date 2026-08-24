@@ -1,0 +1,1573 @@
+%%bash
+set -Eeuo pipefail
+
+# ============================================================
+# FINAL CLEAN DT1D ABLATIONS
+# Flowers102 + ResNet-50
+#
+# Protocol:
+#   epochs : 10
+#   seeds  : 0,1,2
+#   LR grid: 3e-4, 1e-3, 5e-3
+#
+# Clean final-core ablations ONLY:
+#   A1 = remove channel-dependent correction
+#   A2 = H axis only
+#   A3 = remove learned gate -> fixed gamma = 1
+#
+# Prefer Kaggle 2xT4, Internet ON.
+#
+# Hard guard:
+#   11h20 = 680 minutes
+#
+# Output:
+#   ABL_F102_R50_FINAL3_results.zip
+#   ABL_F102_R50_FINAL3_DONE_ONLY_results.zip
+# ============================================================
+
+SESSION_ID="ABL_F102_R50_FINAL3"
+TARGET="ablation_flowers102_resnet50_final3"
+
+METHOD_A="dt1d_no_detail"
+METHOD_B="dt1d_height_only"
+METHOD_C="dt1d_fixed_gate"
+
+METHODS="${METHOD_A},${METHOD_B},${METHOD_C}"
+SEEDS="0,1,2"
+
+# ------------------------------------------------------------
+# REPOSITORY
+# ------------------------------------------------------------
+
+REPO_URL="${DT1D_CNN_REPO_URL:-https://github.com/tydeptrai21042004/whc-dt1d.git}"
+
+# If you have pushed the corrected repository, you can pin it:
+#
+# export DT1D_CNN_COMMIT="<corrected_commit_hash>"
+#
+REPO_COMMIT="${DT1D_CNN_COMMIT:-}"
+
+WORKDIR="/kaggle/working"
+REPO_DIR="$WORKDIR/whc-dt1d-${SESSION_ID}"
+
+DATA_ROOT="$WORKDIR/data_${SESSION_ID}"
+
+OUT_A="$WORKDIR/worker_A_${SESSION_ID}"
+OUT_B="$WORKDIR/worker_B_${SESSION_ID}"
+
+FINAL_ROOT="$WORKDIR/final_${SESSION_ID}"
+
+RESULT_ZIP="$WORKDIR/${SESSION_ID}_results.zip"
+DONE_ZIP="$WORKDIR/${SESSION_ID}_DONE_ONLY_results.zip"
+
+# 11 h 20 min
+DEADLINE_EPOCH="$(( $(date +%s) + 680*60 ))"
+
+export \
+    SESSION_ID TARGET METHODS SEEDS \
+    REPO_DIR DATA_ROOT \
+    OUT_A OUT_B FINAL_ROOT \
+    RESULT_ZIP DONE_ZIP \
+    DEADLINE_EPOCH
+
+echo "============================================================"
+echo "SESSION : $SESSION_ID"
+echo "TARGET  : $TARGET"
+echo "METHODS : $METHODS"
+echo "SEEDS   : $SEEDS"
+echo "CAP     : 680 min = 11h20"
+echo "============================================================"
+
+
+# ============================================================
+# EXPORT FUNCTION
+# ============================================================
+
+pack_results () {
+
+python - <<'PY'
+import os
+import json
+import zipfile
+from pathlib import Path
+
+target = os.environ["TARGET"]
+
+methods = [
+    x for x in os.environ["METHODS"].split(",")
+    if x
+]
+
+seeds = [
+    int(x) for x in os.environ["SEEDS"].split(",")
+    if x
+]
+
+final_root = Path(os.environ["FINAL_ROOT"])
+
+result_zip = Path(os.environ["RESULT_ZIP"])
+done_zip   = Path(os.environ["DONE_ZIP"])
+
+
+def is_complete(method):
+
+    root = final_root / target / method
+
+    if not (root / "lr_selection_summary.json").is_file():
+        return False
+
+    for seed in seeds:
+
+        p = root / f"seed_{seed}" / "test_summary.json"
+
+        if not p.is_file():
+            return False
+
+    return True
+
+
+complete = [
+    m for m in methods
+    if is_complete(m)
+]
+
+
+status = {
+
+    "session": os.environ["SESSION_ID"],
+
+    "target": target,
+
+    "methods": methods,
+
+    "seeds": seeds,
+
+    "complete_methods": complete,
+
+    "missing_methods": [
+        m for m in methods
+        if m not in complete
+    ],
+}
+
+
+final_root.mkdir(
+    parents=True,
+    exist_ok=True
+)
+
+
+(
+    final_root /
+    "EXPORT_STATUS.json"
+).write_text(
+    json.dumps(
+        status,
+        indent=2
+    )
+    + "\n"
+)
+
+
+for p in [
+    result_zip,
+    done_zip
+]:
+
+    if p.exists():
+        p.unlink()
+
+
+# ------------------------------------------------------------
+# FULL ZIP
+# ------------------------------------------------------------
+
+with zipfile.ZipFile(
+    result_zip,
+    "w",
+    zipfile.ZIP_DEFLATED,
+    compresslevel=6
+) as z:
+
+    for root in [
+
+        final_root,
+
+        Path(os.environ["OUT_A"]),
+
+        Path(os.environ["OUT_B"]),
+    ]:
+
+        if not root.exists():
+            continue
+
+        for p in root.rglob("*"):
+
+            if not p.is_file():
+                continue
+
+            # no checkpoints in export
+            if p.suffix.lower() in {
+                ".pth",
+                ".pt",
+                ".ckpt"
+            }:
+                continue
+
+            z.write(
+                p,
+                Path(root.name) /
+                p.relative_to(root)
+            )
+
+
+# ------------------------------------------------------------
+# DONE-ONLY ZIP
+# ------------------------------------------------------------
+
+with zipfile.ZipFile(
+    done_zip,
+    "w",
+    zipfile.ZIP_DEFLATED,
+    compresslevel=6
+) as z:
+
+    # status
+    status_file = (
+        final_root /
+        "EXPORT_STATUS.json"
+    )
+
+    if status_file.exists():
+
+        z.write(
+            status_file,
+            Path(final_root.name) /
+            status_file.name
+        )
+
+
+    # aggregation
+    agg = (
+        final_root /
+        "aggregated"
+    )
+
+    if agg.exists():
+
+        for p in agg.rglob("*"):
+
+            if p.is_file():
+
+                z.write(
+                    p,
+                    Path(final_root.name) /
+                    p.relative_to(final_root)
+                )
+
+
+    # only complete methods
+    for method in complete:
+
+        root = (
+            final_root /
+            target /
+            method
+        )
+
+        for p in root.rglob("*"):
+
+            if not p.is_file():
+                continue
+
+            if p.suffix.lower() in {
+                ".pth",
+                ".pt",
+                ".ckpt"
+            }:
+                continue
+
+            z.write(
+                p,
+                Path(final_root.name) /
+                target /
+                method /
+                p.relative_to(root)
+            )
+
+
+print(
+    json.dumps(
+        status,
+        indent=2
+    )
+)
+
+print(
+    "\nFULL ZIP:",
+    result_zip
+)
+
+print(
+    "DONE ZIP:",
+    done_zip
+)
+PY
+
+ls -lh \
+    "$RESULT_ZIP" \
+    "$DONE_ZIP" \
+    2>/dev/null || true
+}
+
+
+trap '
+rc=$?
+trap - EXIT
+pack_results || true
+exit $rc
+' EXIT
+
+
+# ============================================================
+# 1. CLONE
+# ============================================================
+
+rm -rf "$REPO_DIR"
+
+for TRY in 1 2 3
+do
+
+    git clone \
+        --depth 1 \
+        "$REPO_URL" \
+        "$REPO_DIR" \
+    && break
+
+    sleep $((TRY * 5))
+
+done
+
+
+if [[ ! -d "$REPO_DIR/.git" ]]
+then
+
+    echo "ERROR: Git clone failed."
+
+    exit 2
+
+fi
+
+
+cd "$REPO_DIR"
+
+
+if [[ -n "$REPO_COMMIT" ]]
+then
+
+    git fetch \
+        --depth 1 \
+        origin \
+        "$REPO_COMMIT"
+
+    git checkout \
+        --detach \
+        "$REPO_COMMIT"
+
+fi
+
+
+SOURCE_COMMIT="$(git rev-parse HEAD)"
+
+export SOURCE_COMMIT
+
+echo
+echo "SOURCE_COMMIT=$SOURCE_COMMIT"
+echo
+
+
+# ============================================================
+# 2. INSTALL
+# ============================================================
+
+python -m pip install \
+    -q \
+    --upgrade-strategy only-if-needed \
+    -r requirements-kaggle.txt
+
+
+# ============================================================
+# 3. GPU CHECK
+# ============================================================
+
+python - <<'PY'
+import torch
+
+assert torch.cuda.is_available(), (
+    "GPU is not enabled. "
+    "Enable Kaggle GPU accelerator."
+)
+
+print(
+    "GPU count:",
+    torch.cuda.device_count()
+)
+
+for i in range(
+    torch.cuda.device_count()
+):
+
+    print(
+        i,
+        torch.cuda.get_device_name(i)
+    )
+PY
+
+
+# ============================================================
+# 4. VALIDATE CURRENT REPOSITORY
+# ============================================================
+
+python tools/validate_dt1d.py
+
+python tools/validate_all_configs.py
+
+python -m pytest -q \
+    tests/test_proposal_contract.py \
+    tests/test_seed_policy.py \
+    tests/test_fair_protocol_contract.py \
+    tests/test_cnn_runner.py \
+    tests/test_dt1d_adapter.py
+
+
+# ============================================================
+# 5. CREATE NEW CLEAN ABLATION CONFIG
+# ============================================================
+
+python - <<'PY'
+from pathlib import Path
+import yaml
+
+
+SRC = Path(
+    "configs/experiments/"
+    "ablation_flowers102_resnet50.yaml"
+)
+
+DST = Path(
+    "configs/experiments/"
+    "ablation_flowers102_resnet50_final3.yaml"
+)
+
+
+cfg = yaml.safe_load(
+    SRC.read_text()
+)
+
+
+# ------------------------------------------------------------
+# Keep the ORIGINAL Flowers102/ResNet50 protocol
+# ------------------------------------------------------------
+
+assert cfg["dataset"] == "flowers102"
+
+assert cfg["backbone"] == "resnet50"
+
+assert int(
+    cfg["epochs"]
+) == 10
+
+assert [
+    int(x)
+    for x in cfg["seeds"]
+] == [
+    0,
+    1,
+    2
+]
+
+assert [
+    float(x)
+    for x in
+    cfg["fairness"]["lr_candidates"]
+] == [
+    0.0003,
+    0.001,
+    0.005
+]
+
+
+assert (
+    cfg["fairness"]
+       ["lr_selection_scope"]
+    ==
+    "method_across_seeds"
+)
+
+assert (
+    cfg["fairness"]
+       ["lr_aggregation"]
+    ==
+    "mean_best_val_acc1"
+)
+
+assert (
+    cfg["fairness"]
+       ["evaluate_test_once"]
+    is True
+)
+
+assert (
+    cfg["fairness"]
+       ["test_used_for_selection"]
+    is False
+)
+
+
+cfg["experiment_id"] = (
+    "ablation_flowers102_resnet50_final3"
+)
+
+
+cfg["description"] = """
+
+Three clean one-factor ablations of the final
+DT1D-Adapter core on Flowers102/ResNet-50.
+
+All rows use the same:
+- 10-epoch budget
+- seeds {0,1,2}
+- preprocessing
+- AdamW optimizer
+- cosine schedule
+- validation-only learning-rate grid
+- shared method-level LR selection
+
+These are final-core DT1D ablations and do not use
+the older reviewer-routing implementation.
+
+""".strip()
+
+
+# ============================================================
+# A1. WITHOUT CHANNEL-DEPENDENT CORRECTION
+# ============================================================
+
+NO_DETAIL = {
+
+    "label":
+        "DT1D without channel-dependent correction",
+
+    "reviewer_control":
+        True,
+
+    "args": {
+
+        "tuning_method":
+            "dt1d_ablation",
+
+        "freeze_backbone":
+            True,
+
+        "dt_cache_kernel":
+            True,
+
+        # final two-axis structure
+        "dt_axis":
+            "hw",
+
+        "dt_alpha_group":
+            16,
+
+        # key ablation
+        "ablation_detail_components":
+            "none",
+
+        # retain final direct radii
+        "ablation_active_offsets":
+            "1,2,4",
+
+        # retain p=2 weighted shift
+        "ablation_shift_p":
+            2,
+
+        "ablation_shift_lambda_mode":
+            "learned",
+
+        "ablation_shift_lambda_scope":
+            "axis",
+
+        "ablation_shift_lambda_init":
+            0.0,
+
+        "ablation_shift_lambda_max":
+            0.5,
+
+        "ablation_shift_normalization":
+            "mean",
+
+        # retain final joint L1 constraint
+        "ablation_project_l1":
+            True,
+
+        "ablation_joint_l1_cap":
+            1.0,
+
+        # retain learned residual gate
+        "ablation_gate_mode":
+            "learned",
+
+        "ablation_gate_init":
+            0.01,
+
+        "dt_padding":
+            "replicate",
+
+        "dt_use_pointwise":
+            False,
+    },
+}
+
+
+# ============================================================
+# A2. HEIGHT-ONLY
+# ============================================================
+
+HEIGHT_ONLY = {
+
+    "label":
+        "DT1D single-axis H only",
+
+    "reviewer_control":
+        True,
+
+    "args": {
+
+        "tuning_method":
+            "dt1d_ablation",
+
+        "freeze_backbone":
+            True,
+
+        "dt_cache_kernel":
+            True,
+
+        # key ablation
+        "dt_axis":
+            "h",
+
+        "dt_alpha_group":
+            16,
+
+        # retain final detail correction
+        "ablation_detail_components":
+            "offset4",
+
+        "ablation_active_offsets":
+            "1,2,4",
+
+        "ablation_shift_p":
+            2,
+
+        "ablation_shift_lambda_mode":
+            "learned",
+
+        "ablation_shift_lambda_scope":
+            "axis",
+
+        "ablation_shift_lambda_init":
+            0.0,
+
+        "ablation_shift_lambda_max":
+            0.5,
+
+        "ablation_shift_normalization":
+            "mean",
+
+        "ablation_project_l1":
+            True,
+
+        "ablation_joint_l1_cap":
+            1.0,
+
+        "ablation_gate_mode":
+            "learned",
+
+        "ablation_gate_init":
+            0.01,
+
+        "dt_padding":
+            "replicate",
+
+        "dt_use_pointwise":
+            False,
+    },
+}
+
+
+# ============================================================
+# A3. NO LEARNED RESIDUAL GATE
+#
+# gamma = 1 is fixed.
+#
+# This tests:
+#
+#     x + gamma T(x)
+#
+# vs
+#
+#     x + T(x)
+#
+# It does NOT use gamma=0, because gamma=0 would simply
+# disable the complete adapter branch.
+# ============================================================
+
+FIXED_GATE = {
+
+    "label":
+        "DT1D with fixed unit residual gate",
+
+    "reviewer_control":
+        True,
+
+    "args": {
+
+        "tuning_method":
+            "dt1d_ablation",
+
+        "freeze_backbone":
+            True,
+
+        "dt_cache_kernel":
+            True,
+
+        "dt_axis":
+            "hw",
+
+        "dt_alpha_group":
+            16,
+
+        "ablation_detail_components":
+            "offset4",
+
+        "ablation_active_offsets":
+            "1,2,4",
+
+        "ablation_shift_p":
+            2,
+
+        "ablation_shift_lambda_mode":
+            "learned",
+
+        "ablation_shift_lambda_scope":
+            "axis",
+
+        "ablation_shift_lambda_init":
+            0.0,
+
+        "ablation_shift_lambda_max":
+            0.5,
+
+        "ablation_shift_normalization":
+            "mean",
+
+        "ablation_project_l1":
+            True,
+
+        "ablation_joint_l1_cap":
+            1.0,
+
+        # key ablation:
+        # no trainable residual gate
+        "ablation_gate_mode":
+            "fixed",
+
+        # no gating -> unit residual scale
+        "ablation_gate_init":
+            1.0,
+
+        "dt_padding":
+            "replicate",
+
+        "dt_use_pointwise":
+            False,
+    },
+}
+
+
+cfg["methods"] = {
+
+    "dt1d_no_detail":
+        NO_DETAIL,
+
+    "dt1d_height_only":
+        HEIGHT_ONLY,
+
+    "dt1d_fixed_gate":
+        FIXED_GATE,
+}
+
+
+cfg["method_order"] = [
+
+    "dt1d_no_detail",
+
+    "dt1d_height_only",
+
+    "dt1d_fixed_gate",
+]
+
+
+# Remove old reviewer-routing coverage bookkeeping.
+cfg.pop(
+    "reviewer_coverage",
+    None
+)
+
+
+DST.write_text(
+    yaml.safe_dump(
+        cfg,
+        sort_keys=False
+    )
+)
+
+
+print(
+    "Created:",
+    DST
+)
+
+print()
+
+print(
+    DST.read_text()
+)
+PY
+
+
+# ============================================================
+# 6. PREFLIGHT
+# ============================================================
+
+PREFLIGHT="$WORKDIR/_preflight_${SESSION_ID}"
+
+rm -rf "$PREFLIGHT"
+
+mkdir -p "$PREFLIGHT"
+
+
+echo
+echo "================ PLAN ================"
+echo
+
+
+python tools/run_cnn_paper.py \
+    --target "$TARGET" \
+    --methods "$METHODS" \
+    --seeds "$SEEDS" \
+    --output-root "$PREFLIGHT" \
+    --data-path "$DATA_ROOT" \
+    --device cpu \
+    --plan-only
+
+
+echo
+echo "Expected:"
+echo "  3 methods"
+echo "x 3 seeds"
+echo "x 3 LR candidates"
+echo "= 27 validation training runs"
+echo "+ 9 one-time final test evaluations"
+echo
+
+
+echo
+echo "================ DRY RUN ================"
+echo
+
+
+python tools/run_cnn_paper.py \
+    --target "$TARGET" \
+    --methods "$METHODS" \
+    --seeds "$SEEDS" \
+    --output-root "$PREFLIGHT" \
+    --data-path "$DATA_ROOT" \
+    --device cpu \
+    --dry-run
+
+
+rm -rf "$PREFLIGHT"
+
+
+# ============================================================
+# 7. PRE-DOWNLOAD FLOWERS102 + RESNET50 WEIGHTS
+# ============================================================
+
+mkdir -p \
+    "$DATA_ROOT" \
+    "$OUT_A" \
+    "$OUT_B" \
+    "$FINAL_ROOT"
+
+
+python - <<'PY'
+import os
+
+from torchvision import (
+    datasets,
+    models
+)
+
+
+root = os.environ[
+    "DATA_ROOT"
+]
+
+
+for split in [
+    "train",
+    "val",
+    "test"
+]:
+
+    datasets.Flowers102(
+        root=root,
+        split=split,
+        download=True
+    )
+
+
+models.resnet50(
+    weights=
+    models.ResNet50_Weights.DEFAULT
+)
+
+
+print(
+    "Flowers102 + ResNet50 preload PASS"
+)
+PY
+
+
+# ============================================================
+# 8. SPLIT ACROSS TWO GPUS
+#
+# GPU 0:
+#   no-detail
+#
+# GPU 1:
+#   H-only + fixed-gate
+#
+# H-only is cheaper, so this is reasonably balanced.
+#
+# If only one GPU exists, worker B runs after worker A.
+# ============================================================
+
+NGPU="$(
+python - <<'PY'
+import torch
+print(
+    torch.cuda.device_count()
+)
+PY
+)"
+
+
+echo
+echo "Detected GPUs: $NGPU"
+echo
+
+
+run_A () {
+
+    python tools/run_cnn_paper.py \
+        --target "$TARGET" \
+        --methods "$METHOD_A" \
+        --seeds "$SEEDS" \
+        --output-root "$OUT_A" \
+        --data-path "$DATA_ROOT" \
+        --device cuda:0 \
+        --skip-if-complete
+}
+
+
+run_B () {
+
+    local DEV="$1"
+
+    python tools/run_cnn_paper.py \
+        --target "$TARGET" \
+        --methods "${METHOD_B},${METHOD_C}" \
+        --seeds "$SEEDS" \
+        --output-root "$OUT_B" \
+        --data-path "$DATA_ROOT" \
+        --device "$DEV" \
+        --skip-if-complete
+}
+
+
+export -f \
+    run_A \
+    run_B
+
+export \
+    METHOD_A \
+    METHOD_B \
+    METHOD_C \
+    TARGET \
+    SEEDS \
+    OUT_A \
+    OUT_B \
+    DATA_ROOT
+
+
+# ============================================================
+# 9. RUN WITH GLOBAL 11h20 WATCHDOG
+# ============================================================
+
+PIDS=()
+
+
+if (( NGPU >= 2 ))
+then
+
+    echo "Running with 2 GPUs."
+
+    setsid bash -c '
+        run_A
+    ' \
+    >"$OUT_A/worker.log" \
+    2>&1 &
+
+    PIDS+=("$!")
+
+
+    setsid bash -c '
+        run_B cuda:1
+    ' \
+    >"$OUT_B/worker.log" \
+    2>&1 &
+
+    PIDS+=("$!")
+
+else
+
+    echo "Only one GPU found."
+
+    setsid bash -c '
+        run_A
+    ' \
+    >"$OUT_A/worker.log" \
+    2>&1 &
+
+    PIDS+=("$!")
+fi
+
+
+RUN_RC=0
+
+
+while true
+do
+
+    ALIVE=0
+
+    for PID in "${PIDS[@]}"
+    do
+
+        if kill -0 "$PID" \
+            2>/dev/null
+        then
+
+            ALIVE=1
+
+        fi
+
+    done
+
+
+    if (( ALIVE == 0 ))
+    then
+
+        break
+
+    fi
+
+
+    if (( $(date +%s) >= DEADLINE_EPOCH ))
+    then
+
+        echo
+        echo "================================================"
+        echo "11h20 HARD CAP REACHED"
+        echo "Stopping active workers..."
+        echo "================================================"
+        echo
+
+
+        for PID in "${PIDS[@]}"
+        do
+
+            kill -TERM \
+                -- "-$PID" \
+                2>/dev/null \
+            || true
+
+        done
+
+
+        sleep 20
+
+
+        for PID in "${PIDS[@]}"
+        do
+
+            kill -KILL \
+                -- "-$PID" \
+                2>/dev/null \
+            || true
+
+        done
+
+
+        RUN_RC=124
+
+        break
+
+    fi
+
+
+    sleep 10
+
+done
+
+
+for PID in "${PIDS[@]}"
+do
+
+    wait "$PID" \
+    || RUN_RC=$?
+
+done
+
+
+# ------------------------------------------------------------
+# ONE-GPU FALLBACK: run worker B afterward if time remains
+# ------------------------------------------------------------
+
+if (( NGPU < 2 ))
+then
+
+    if (( $(date +%s) < DEADLINE_EPOCH ))
+    then
+
+        setsid bash -c '
+            run_B cuda:0
+        ' \
+        >"$OUT_B/worker.log" \
+        2>&1 &
+
+        PID="$!"
+
+
+        while kill -0 "$PID" \
+            2>/dev/null
+        do
+
+            if (( $(date +%s) >= DEADLINE_EPOCH ))
+            then
+
+                kill -TERM \
+                    -- "-$PID" \
+                    2>/dev/null \
+                || true
+
+                sleep 20
+
+                kill -KILL \
+                    -- "-$PID" \
+                    2>/dev/null \
+                || true
+
+                RUN_RC=124
+
+                break
+
+            fi
+
+            sleep 10
+
+        done
+
+
+        wait "$PID" \
+        || RUN_RC=$?
+
+    fi
+
+fi
+
+
+# ============================================================
+# 10. MERGE ONLY COMPLETE METHOD OUTPUTS
+# ============================================================
+
+python - <<'PY'
+import os
+import shutil
+from pathlib import Path
+
+
+target = os.environ["TARGET"]
+
+seeds = [
+    int(x)
+    for x in
+    os.environ["SEEDS"].split(",")
+    if x
+]
+
+
+final_root = Path(
+    os.environ["FINAL_ROOT"]
+)
+
+
+sources = {
+
+    "dt1d_no_detail":
+        Path(os.environ["OUT_A"]),
+
+    "dt1d_height_only":
+        Path(os.environ["OUT_B"]),
+
+    "dt1d_fixed_gate":
+        Path(os.environ["OUT_B"]),
+}
+
+
+def complete(
+    src,
+    method
+):
+
+    root = (
+        src /
+        target /
+        method
+    )
+
+    if not (
+        root /
+        "lr_selection_summary.json"
+    ).is_file():
+
+        return False
+
+
+    return all(
+
+        (
+            root /
+            f"seed_{s}" /
+            "test_summary.json"
+        ).is_file()
+
+        for s in seeds
+    )
+
+
+dst_exp = (
+    final_root /
+    target
+)
+
+dst_exp.mkdir(
+    parents=True,
+    exist_ok=True
+)
+
+
+for method, src in sources.items():
+
+    if not complete(
+        src,
+        method
+    ):
+
+        print(
+            "INCOMPLETE:",
+            method
+        )
+
+        continue
+
+
+    source = (
+        src /
+        target /
+        method
+    )
+
+    destination = (
+        dst_exp /
+        method
+    )
+
+
+    shutil.rmtree(
+        destination,
+        ignore_errors=True
+    )
+
+
+    shutil.copytree(
+        source,
+        destination
+    )
+
+
+    print(
+        "MERGED COMPLETE:",
+        method
+    )
+PY
+
+
+# ============================================================
+# 11. SAVE THE EXACT CONFIG USED
+# ============================================================
+
+cp \
+    "configs/experiments/${TARGET}.yaml" \
+    "$FINAL_ROOT/$TARGET/experiment_config.yaml"
+
+
+cat > "$FINAL_ROOT/SOURCE_INFO.txt" <<EOF
+session=${SESSION_ID}
+source_commit=${SOURCE_COMMIT}
+repo=${REPO_URL}
+target=${TARGET}
+methods=${METHODS}
+seeds=${SEEDS}
+epochs=10
+lr_candidates=0.0003,0.001,0.005
+lr_selection_scope=method_across_seeds
+test_used_for_selection=false
+EOF
+
+
+# ============================================================
+# 12. AGGREGATE
+# ============================================================
+
+AGG="$FINAL_ROOT/aggregated/$TARGET"
+
+mkdir -p "$AGG"
+
+
+set +e
+
+python tools/aggregate_cnn_paper.py \
+    --root "$FINAL_ROOT" \
+    --target "$TARGET" \
+    --output-dir "$AGG" \
+    --require-seeds "$SEEDS" \
+    --allow-incomplete
+
+AGG_RC="$?"
+
+set -e
+
+
+# ============================================================
+# 13. CREATE SIMPLE FINAL SUMMARY
+# ============================================================
+
+python - <<'PY'
+import json
+import os
+
+from pathlib import Path
+
+
+root = Path(
+    os.environ["FINAL_ROOT"]
+)
+
+target = os.environ[
+    "TARGET"
+]
+
+methods = [
+
+    x for x in
+    os.environ["METHODS"].split(",")
+
+    if x
+]
+
+seeds = [
+
+    int(x)
+
+    for x in
+    os.environ["SEEDS"].split(",")
+
+    if x
+]
+
+
+summary = {}
+
+
+for method in methods:
+
+    mroot = (
+        root /
+        target /
+        method
+    )
+
+
+    selection = {}
+
+
+    psel = (
+        mroot /
+        "lr_selection_summary.json"
+    )
+
+
+    if psel.is_file():
+
+        selection = json.loads(
+            psel.read_text()
+        )
+
+
+    runs = []
+
+
+    for seed in seeds:
+
+        p = (
+            mroot /
+            f"seed_{seed}" /
+            "test_summary.json"
+        )
+
+
+        if not p.is_file():
+
+            continue
+
+
+        d = json.loads(
+            p.read_text()
+        )
+
+
+        runs.append({
+
+            "seed":
+                seed,
+
+            "selected_lr":
+                d.get(
+                    "selected_lr",
+                    selection.get(
+                        "selected_lr"
+                    )
+                ),
+
+            "best_val_acc1":
+                d.get(
+                    "best_val_acc1"
+                ),
+
+            "test_acc1":
+                d.get(
+                    "test_acc1_at_best_val"
+                ),
+        })
+
+
+    summary[method] = {
+
+        "complete":
+            len(runs)
+            == len(seeds),
+
+        "selected_lr":
+            selection.get(
+                "selected_lr"
+            ),
+
+        "runs":
+            runs,
+    }
+
+
+out = (
+    root /
+    "FINAL_ABLATION_SUMMARY.json"
+)
+
+
+out.write_text(
+    json.dumps(
+        summary,
+        indent=2
+    )
+    + "\n"
+)
+
+
+print()
+print(
+    json.dumps(
+        summary,
+        indent=2
+    )
+)
+PY
+
+
+# ============================================================
+# 14. FINAL EXPORT
+# ============================================================
+
+pack_results
+
+trap - EXIT
+
+
+echo
+echo "============================================================"
+echo "FINAL ABLATION SESSION FINISHED"
+echo "============================================================"
+echo
+echo "RUN_RC = $RUN_RC"
+echo "AGG_RC = $AGG_RC"
+echo
+echo "OUTPUT 1:"
+echo "$DONE_ZIP"
+echo
+echo "OUTPUT 2:"
+echo "$RESULT_ZIP"
+echo
+echo "Use DONE_ONLY_results.zip first."
+echo
+echo "The important aggregated files are under:"
+echo
+echo "final_${SESSION_ID}/aggregated/${TARGET}/"
+echo
+echo "especially:"
+echo "  manuscript_compact.csv"
+echo "  mean_std_pretty.csv"
+echo "  mean_std_numeric.csv"
+echo "  seed_completeness.json"
+echo
+echo "============================================================"
