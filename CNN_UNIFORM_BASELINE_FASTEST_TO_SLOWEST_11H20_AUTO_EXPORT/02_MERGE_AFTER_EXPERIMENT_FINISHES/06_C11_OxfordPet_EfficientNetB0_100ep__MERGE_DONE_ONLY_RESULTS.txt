@@ -1,0 +1,76 @@
+%%bash
+set -Eeuo pipefail
+
+# Merge DONE_ONLY ZIPs produced by the split sessions for C11_Pet_EffB0_100ep.
+# Attach all corresponding *_DONE_ONLY_results.zip files as Kaggle inputs,
+# then run this cell. It refuses conflicting duplicate files.
+
+EXP_PREFIX="C11_Pet_EffB0_100ep"
+EXPERIMENT_ID="table_13"
+EXPECTED_METHODS="dt1d,full,ssf,conv_r4,bam,residual,lora_conv,sidetune"
+OUT="/kaggle/working/${EXP_PREFIX}_MERGED_DONE_ONLY_results.zip"
+
+export EXP_PREFIX EXPERIMENT_ID EXPECTED_METHODS OUT
+
+python - <<'PYMERGE'
+import hashlib, json, os, zipfile
+from pathlib import Path
+
+inp=Path("/kaggle/input")
+prefix=os.environ["EXP_PREFIX"]
+target=os.environ["EXPERIMENT_ID"]
+expected=[x for x in os.environ["EXPECTED_METHODS"].split(",") if x]
+out=Path(os.environ["OUT"])
+
+zips=sorted(inp.rglob(f"{prefix}*_DONE_ONLY_results.zip"))
+if not zips:
+    raise SystemExit(f"No {prefix}*_DONE_ONLY_results.zip files found under /kaggle/input")
+
+files={}
+sources={}
+complete=set()
+manifests=[]
+for zp in zips:
+    with zipfile.ZipFile(zp) as z:
+        names=z.namelist()
+        if "DONE_ONLY_MANIFEST.json" in names:
+            mf=json.loads(z.read("DONE_ONLY_MANIFEST.json"))
+            manifests.append(mf)
+            if mf.get("experiment_id") != target:
+                raise SystemExit(f"Wrong experiment_id in {zp}: {mf.get('experiment_id')}")
+            complete.update(mf.get("complete_methods",[]))
+        for name in names:
+            if name in ("DONE_ONLY_MANIFEST.json","experiment.yaml") or name.startswith("logs/"):
+                continue
+            data=z.read(name)
+            digest=hashlib.sha256(data).hexdigest()
+            if name in files and files[name][0] != digest:
+                raise SystemExit(f"Conflicting duplicate path {name} from {zp} and {sources[name]}")
+            files[name]=(digest,data)
+            sources[name]=str(zp)
+
+missing=sorted(set(expected)-complete)
+if missing:
+    raise SystemExit(f"Missing completed split-session methods: {missing}")
+
+manifest={
+    "experiment_prefix":prefix,
+    "experiment_id":target,
+    "expected_split_methods":expected,
+    "complete_methods":sorted(complete),
+    "source_zips":[str(z) for z in zips],
+    "source_manifests":manifests,
+}
+tmp=out.with_name(out.name+".tmp")
+tmp.unlink(missing_ok=True)
+with zipfile.ZipFile(tmp,"w",zipfile.ZIP_DEFLATED,compresslevel=6) as z:
+    z.writestr("MERGED_MANIFEST.json",json.dumps(manifest,indent=2)+"\n")
+    for name in sorted(files):
+        z.writestr(name,files[name][1])
+tmp.replace(out)
+print("MERGED:",out)
+print("METHODS:",sorted(complete))
+print("FILES:",len(files))
+PYMERGE
+
+ls -lh "$OUT"

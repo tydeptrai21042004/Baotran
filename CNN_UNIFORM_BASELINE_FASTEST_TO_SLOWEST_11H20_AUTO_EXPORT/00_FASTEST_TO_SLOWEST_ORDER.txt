@@ -1,0 +1,67 @@
+FASTEST -> SLOWEST RUN ORDER (EXPECTED)
+==============================================================================
+
+Purpose: order the independent Kaggle training cells so the lighter jobs are run first.
+This is an EXPECTED ordering, not a measured wall-clock guarantee. Actual runtime varies
+with Kaggle GPU model, cache/download state, dataloader speed, AMP behavior, and LR failures.
+
+Sorting heuristic combines dataset size, epoch budget, approximate backbone compute,
+number of methods in the cell, and a method-cost ordering. It does NOT change any
+dataset/backbone/epoch/seed/LR-grid settings.
+
+Inside multi-method cells I also changed only METHODS_CSV execution order so the
+expected faster methods run first. The 11h20 auto-export/current-done behavior remains intact.
+
+Method execution priority used inside grouped cells:
+  linear -> bitfit -> ssf -> residual -> bam -> lora_conv -> conv_r4 -> dt1d -> full -> sidetune
+
+GLOBAL TRAINING CELL ORDER
+------------------------------------------------------------------------------
+001. N02_Flowers17_MV3S_10ep | flowers17 | mobilenet_v3_small | 10 ep | methods=linear,bitfit,ssf,dt1d,full
+002. N02_Flowers17_MV3S_10ep | flowers17 | mobilenet_v3_small | 10 ep | methods=residual,bam,lora_conv,conv_r4,sidetune
+003. U01_USPS_MV3S_10ep | usps | mobilenet_v3_small | 10 ep | methods=residual,lora_conv,sidetune
+004. C13_EuroSAT_MV3S_25ep | eurosat | mobilenet_v3_small | 25 ep | methods=bitfit
+005. C13_EuroSAT_MV3S_25ep | eurosat | mobilenet_v3_small | 25 ep | methods=ssf
+006. C13_EuroSAT_MV3S_25ep | eurosat | mobilenet_v3_small | 25 ep | methods=residual
+007. C13_EuroSAT_MV3S_25ep | eurosat | mobilenet_v3_small | 25 ep | methods=bam
+008. C13_EuroSAT_MV3S_25ep | eurosat | mobilenet_v3_small | 25 ep | methods=lora_conv
+009. C13_EuroSAT_MV3S_25ep | eurosat | mobilenet_v3_small | 25 ep | methods=conv_r4
+010. C13_EuroSAT_MV3S_25ep | eurosat | mobilenet_v3_small | 25 ep | methods=dt1d
+011. C10_Pet_EffB0_10ep | oxford_iiit_pet | efficientnet_b0 | 10 ep | methods=residual,bam,lora_conv,sidetune
+012. C13_EuroSAT_MV3S_25ep | eurosat | mobilenet_v3_small | 25 ep | methods=sidetune
+013. N01_STL10_EffB0_10ep | stl10 | efficientnet_b0 | 10 ep | methods=linear,bitfit,ssf,dt1d,full
+014. N01_STL10_EffB0_10ep | stl10 | efficientnet_b0 | 10 ep | methods=residual,bam,lora_conv,conv_r4,sidetune
+015. C11_Pet_EffB0_100ep | oxford_iiit_pet | efficientnet_b0 | 100 ep | methods=ssf
+016. C11_Pet_EffB0_100ep | oxford_iiit_pet | efficientnet_b0 | 100 ep | methods=residual
+017. C11_Pet_EffB0_100ep | oxford_iiit_pet | efficientnet_b0 | 100 ep | methods=bam
+018. C11_Pet_EffB0_100ep | oxford_iiit_pet | efficientnet_b0 | 100 ep | methods=lora_conv
+019. C11_Pet_EffB0_100ep | oxford_iiit_pet | efficientnet_b0 | 100 ep | methods=conv_r4
+020. C11_Pet_EffB0_100ep | oxford_iiit_pet | efficientnet_b0 | 100 ep | methods=dt1d
+021. C11_Pet_EffB0_100ep | oxford_iiit_pet | efficientnet_b0 | 100 ep | methods=full
+022. C11_Pet_EffB0_100ep | oxford_iiit_pet | efficientnet_b0 | 100 ep | methods=sidetune
+023. T03_DTD_R50_100ep | dtd | resnet50 | 100 ep | methods=ssf
+024. T03_DTD_R50_100ep | dtd | resnet50 | 100 ep | methods=residual
+025. T03_DTD_R50_100ep | dtd | resnet50 | 100 ep | methods=bam
+026. T04_Flowers102_R50_100ep | flowers102 | resnet50 | 100 ep | methods=residual
+027. T04_Flowers102_R50_100ep | flowers102 | resnet50 | 100 ep | methods=bam
+028. T03_DTD_R50_100ep | dtd | resnet50 | 100 ep | methods=lora_conv
+029. T03_DTD_R50_100ep | dtd | resnet50 | 100 ep | methods=conv_r4
+030. N03_STL10_DenseNet121_100ep | stl10 | densenet121 | 100 ep | methods=linear
+031. T04_Flowers102_R50_100ep | flowers102 | resnet50 | 100 ep | methods=lora_conv
+032. T04_Flowers102_R50_100ep | flowers102 | resnet50 | 100 ep | methods=conv_r4
+033. T03_DTD_R50_100ep | dtd | resnet50 | 100 ep | methods=dt1d
+034. N03_STL10_DenseNet121_100ep | stl10 | densenet121 | 100 ep | methods=bitfit
+035. T04_Flowers102_R50_100ep | flowers102 | resnet50 | 100 ep | methods=dt1d
+036. T03_DTD_R50_100ep | dtd | resnet50 | 100 ep | methods=full
+037. N03_STL10_DenseNet121_100ep | stl10 | densenet121 | 100 ep | methods=ssf
+038. N04_Flowers17_R18_100ep | flowers17 | resnet18 | 100 ep | methods=linear,bitfit,ssf,dt1d,full
+039. T03_DTD_R50_100ep | dtd | resnet50 | 100 ep | methods=sidetune
+040. N03_STL10_DenseNet121_100ep | stl10 | densenet121 | 100 ep | methods=residual
+041. T04_Flowers102_R50_100ep | flowers102 | resnet50 | 100 ep | methods=sidetune
+042. N04_Flowers17_R18_100ep | flowers17 | resnet18 | 100 ep | methods=residual,bam,lora_conv,conv_r4,sidetune
+043. N03_STL10_DenseNet121_100ep | stl10 | densenet121 | 100 ep | methods=bam
+044. N03_STL10_DenseNet121_100ep | stl10 | densenet121 | 100 ep | methods=lora_conv
+045. N03_STL10_DenseNet121_100ep | stl10 | densenet121 | 100 ep | methods=conv_r4
+046. N03_STL10_DenseNet121_100ep | stl10 | densenet121 | 100 ep | methods=dt1d
+047. N03_STL10_DenseNet121_100ep | stl10 | densenet121 | 100 ep | methods=full
+048. N03_STL10_DenseNet121_100ep | stl10 | densenet121 | 100 ep | methods=sidetune

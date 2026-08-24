@@ -1,0 +1,20 @@
+11H20 TIMEOUT EXPORT POLICY
+============================
+
+Applied to every training bash cell in this package.
+
+1. The wall-clock guard starts from the beginning of the cell and fires at 11 h 20 min (40,800 s).
+2. When it fires, the cell first sends TERM and then KILL (if needed) to active training process groups.
+3. The cell immediately writes three exports in /kaggle/working:
+   - <JOB>_11H20_CURRENT_DONE_results.zip
+     Explicit timeout export containing all non-checkpoint experimental result files, logs, configs, completed final-seed results, and completed LR-candidate metadata available at the guard.
+   - <JOB>_DONE_ONLY_results.zip
+     Contains only methods that have complete final test summaries for every requested seed.
+   - <JOB>_results.zip
+     Method-level progress/state metadata used by the same cell on a later Kaggle session.
+4. The timeout ZIP contains 11H20_CURRENT_DONE_MANIFEST.json, which lists complete methods, complete final seed runs, completed LR candidates, and failed/non-finite LR candidates.
+5. Model checkpoint files (.pth/.pt/.ckpt) are intentionally omitted from the CURRENT_DONE and normal result ZIPs to keep timeout export fast and small.
+6. The cell exits with code 124 after the timeout export is flushed to disk.
+7. If the cell finishes before 11 h 20 min, the normal DONE_ONLY and result ZIPs are still created; the special 11H20 timeout ZIP is only needed when the guard fires.
+
+This preserves the manuscript protocol: one shared validation-selected LR per method, with non-finite LR candidates excluded globally rather than allowing per-seed LR cherry-picking.

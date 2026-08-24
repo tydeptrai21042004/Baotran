@@ -1,0 +1,865 @@
+%%bash
+set -Eeuo pipefail
+
+# ============================================================
+# CNN UNIFORM-BASELINE RERUN — INDEPENDENT KAGGLE SESSION
+# Experiment : T03_DTD_R50_100ep
+# Dataset    : dtd
+# Backbone   : resnet50
+# Epochs     : 100
+# Batch size : 128
+# Seeds      : 0,1,2
+# This chunk : lora_conv
+# Already complete in the supplied manuscript: linear,bitfit,conv_r6,conv_r8
+#
+# Canonical CNN family used uniformly:
+#   dt1d, full, linear, bitfit, ssf, conv_r4,
+#   bam, residual, lora_conv, sidetune
+#
+# This file is self-contained. It clones the exact repository commit,
+# applies the corrected LoRA-Conv LR-failure policy and Side-Tuning fix,
+# validates/smoke-tests the configuration, runs only this chunk, and
+# auto-exports completed methods before Kaggle's 12 h ceiling.
+# If the 11h20 guard fires, it also writes an explicit *_11H20_CURRENT_DONE_results.zip
+# containing every completed final seed/result and completed LR-candidate metadata so far.
+#
+# HARD GUARD: 11 h 20 min (40,800 s) from CELL START.
+# ============================================================
+
+JOB="T03_DTD_R50_100ep_part07_lora_conv"
+BASE_CONFIG="table_03.yaml"
+EXPERIMENT_ID="table_03"
+METHODS_CSV="lora_conv"
+SEEDS_CSV="0,1,2"
+DATASET="dtd"
+BACKBONE="resnet50"
+EPOCHS=100
+BATCH_SIZE=128
+NEEDS_FLOWERS17_PATCH=0
+
+REPO_URL="${DT1D_CNN_REPO_URL:-https://github.com/tydeptrai21042004/whc-dt1d.git}"
+REPO_COMMIT="${DT1D_CNN_COMMIT:-fda0047228b3cf048ebb43d93f3970574fbef9ef}"
+WORK="/kaggle/working"
+REPO="$WORK/whc-dt1d-$JOB"
+STATE="$WORK/${JOB}_state"
+CONFIG="$STATE/experiment.yaml"
+ZIP="$WORK/${JOB}_results.zip"
+DONE_ZIP="$WORK/${JOB}_DONE_ONLY_results.zip"
+TIMEOUT_ZIP="$WORK/${JOB}_11H20_CURRENT_DONE_results.zip"
+DATA="$WORK/data_T03_DTD_R50_100ep"
+
+CELL_BUDGET_SECONDS=40800
+CELL_START_TS=$(date +%s)
+CELL_DEADLINE_TS=$((CELL_START_TS + CELL_BUDGET_SECONDS))
+TIMEOUT_FLAG="$STATE/WALLCLOCK_11H20_REACHED.txt"
+ACTIVE_PGIDS_FILE="$STATE/ACTIVE_TRAINING_PGIDS.txt"
+WATCHDOG_PID=""
+
+export JOB BASE_CONFIG EXPERIMENT_ID METHODS_CSV SEEDS_CSV DATASET BACKBONE EPOCHS BATCH_SIZE
+export NEEDS_FLOWERS17_PATCH REPO STATE CONFIG ZIP DONE_ZIP TIMEOUT_ZIP DATA
+export CELL_BUDGET_SECONDS CELL_START_TS CELL_DEADLINE_TS TIMEOUT_FLAG ACTIVE_PGIDS_FILE
+
+pack_results() {
+  [[ -d "$STATE" ]] || return 0
+  python - <<'PYZIP'
+import os, zipfile
+from pathlib import Path
+root=Path(os.environ["STATE"]); dst=Path(os.environ["ZIP"])
+tmp=dst.with_name(dst.name+f".tmp.{os.getpid()}")
+tmp.unlink(missing_ok=True)
+with zipfile.ZipFile(tmp,"w",zipfile.ZIP_DEFLATED,compresslevel=6) as z:
+    for p in root.rglob("*"):
+        if p.is_file() and p.suffix.lower() not in {".pth",".pt",".ckpt"}:
+            z.write(p,p.relative_to(root.parent))
+tmp.replace(dst)
+print("PACKED METHOD-LEVEL RESUMABLE STATE:",dst)
+PYZIP
+  ls -lh "$ZIP" || true
+}
+
+pack_done_results() {
+  mkdir -p "$STATE"
+  python - <<'PYDONE'
+import json, os, zipfile, time
+from pathlib import Path
+state=Path(os.environ["STATE"]); dst=Path(os.environ["DONE_ZIP"])
+target=os.environ["EXPERIMENT_ID"]
+methods=[x for x in os.environ["METHODS_CSV"].split(",") if x]
+seeds=[int(x) for x in os.environ["SEEDS_CSV"].split(",") if x]
+status={}; complete=[]
+for method in methods:
+    root=state/"outputs"/method/target/method
+    ok=all((root/f"seed_{seed}"/"test_summary.json").is_file() for seed in seeds)
+    status[method]={"complete":bool(ok),"method_root":str(root)}
+    if ok: complete.append((method,root))
+tmp=dst.with_name(dst.name+f".tmp.{os.getpid()}")
+tmp.unlink(missing_ok=True)
+with zipfile.ZipFile(tmp,"w",zipfile.ZIP_DEFLATED,compresslevel=6) as z:
+    manifest={
+        "job":os.environ["JOB"],
+        "experiment_id":target,
+        "requested_methods":methods,
+        "requested_seeds":seeds,
+        "canonical_cnn_methods":["dt1d","full","linear","bitfit","ssf","conv_r4","bam","residual","lora_conv","sidetune"],
+        "elapsed_seconds":int(time.time())-int(os.environ["CELL_START_TS"]),
+        "budget_seconds":int(os.environ["CELL_BUDGET_SECONDS"]),
+        "complete_methods":[m for m,_ in complete],
+        "status":status,
+    }
+    z.writestr("DONE_ONLY_MANIFEST.json",json.dumps(manifest,indent=2)+"\n")
+    cfg=Path(os.environ["CONFIG"])
+    if cfg.is_file(): z.write(cfg,"experiment.yaml")
+    for method,root in complete:
+        for p in root.rglob("*"):
+            if p.is_file() and p.suffix.lower() not in {".pth",".pt",".ckpt"}:
+                z.write(p,Path(target)/method/p.relative_to(root))
+        log=state/"logs"/f"{method}.log"
+        if log.is_file(): z.write(log,Path("logs")/log.name)
+tmp.replace(dst)
+print("PACKED DONE-ONLY:",dst)
+print("COMPLETE METHODS:",[m for m,_ in complete])
+PYDONE
+  ls -lh "$DONE_ZIP" || true
+}
+
+
+pack_timeout_current_done() {
+  [[ -d "$STATE" ]] || return 0
+  python - <<'PYTIMEOUTZIP'
+import json, math, os, time, zipfile
+from pathlib import Path
+
+state = Path(os.environ["STATE"])
+dst = Path(os.environ["TIMEOUT_ZIP"])
+target = os.environ["EXPERIMENT_ID"]
+methods = [x for x in os.environ["METHODS_CSV"].split(",") if x]
+seeds = [int(x) for x in os.environ["SEEDS_CSV"].split(",") if x]
+
+complete_methods = []
+complete_final_seeds = []
+completed_lr_candidates = []
+failed_lr_candidates = []
+
+for method in methods:
+    method_root = state / "outputs" / method / target / method
+    final_seed_ok = []
+    for seed in seeds:
+        test_summary = method_root / f"seed_{seed}" / "test_summary.json"
+        if test_summary.is_file():
+            final_seed_ok.append(seed)
+            complete_final_seeds.append({"method": method, "seed": seed})
+    if len(final_seed_ok) == len(seeds):
+        complete_methods.append(method)
+
+    for status_path in method_root.rglob("candidate_status.json") if method_root.exists() else []:
+        try:
+            row = json.loads(status_path.read_text(encoding="utf-8"))
+            rc = int(row.get("return_code", 1))
+            val = float(row.get("best_val_acc1", float("nan")))
+            item = {
+                "method": method,
+                "seed": int(row.get("seed", -1)),
+                "lr": float(row.get("lr", float("nan"))),
+                "return_code": rc,
+                "best_val_acc1": val,
+                "best_epoch": row.get("best_epoch"),
+                "output_dir": row.get("output_dir"),
+            }
+            if rc == 0 and math.isfinite(val):
+                completed_lr_candidates.append(item)
+            else:
+                failed_lr_candidates.append(item)
+        except Exception as exc:
+            failed_lr_candidates.append({
+                "method": method,
+                "status_file": str(status_path),
+                "reason": f"unreadable candidate status: {exc}",
+            })
+
+manifest = {
+    "job": os.environ["JOB"],
+    "reason": "11h20_wallclock_guard",
+    "created_epoch": int(time.time()),
+    "elapsed_seconds": int(time.time()) - int(os.environ["CELL_START_TS"]),
+    "budget_seconds": int(os.environ["CELL_BUDGET_SECONDS"]),
+    "experiment_id": target,
+    "requested_methods": methods,
+    "requested_seeds": seeds,
+    "complete_methods": complete_methods,
+    "complete_final_seed_runs": complete_final_seeds,
+    "completed_validation_lr_candidates": completed_lr_candidates,
+    "failed_or_nonfinite_lr_candidates": failed_lr_candidates,
+    "note": (
+        "This timeout export contains every non-checkpoint result/log/config file "
+        "available when the 11h20 guard fired. It can therefore contain completed "
+        "validation LR candidates even when a whole method has not yet reached final test."
+    ),
+}
+
+tmp = dst.with_name(dst.name + f".tmp.{os.getpid()}")
+tmp.unlink(missing_ok=True)
+with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED, compresslevel=6) as z:
+    z.writestr("11H20_CURRENT_DONE_MANIFEST.json", json.dumps(manifest, indent=2, default=str) + "\n")
+    for p in state.rglob("*"):
+        if not p.is_file():
+            continue
+        rel = p.relative_to(state)
+        # Result export, not a model archive: omit large model checkpoints.
+        if p.suffix.lower() in {".pth", ".pt", ".ckpt"}:
+            continue
+        # Smoke/plan are preflight artefacts, not experimental results.
+        if rel.parts and rel.parts[0] in {"smoke", "plan"}:
+            continue
+        z.write(p, Path(os.environ["JOB"]) / rel)
+
+tmp.replace(dst)
+print("11H20 CURRENT-DONE ZIP READY:", dst)
+print("Complete methods:", complete_methods)
+print("Complete final seed runs:", complete_final_seeds)
+print("Completed LR candidates:", len(completed_lr_candidates))
+PYTIMEOUTZIP
+  ls -lh "$TIMEOUT_ZIP" || true
+}
+
+pack_all_exports() {
+  pack_results || true
+  pack_done_results || true
+}
+
+stop_active_training_groups() {
+  [[ -f "$ACTIVE_PGIDS_FILE" ]] || return 0
+  mapfile -t _pgids < "$ACTIVE_PGIDS_FILE" || true
+  for pgid in "${_pgids[@]:-}"; do
+    [[ "$pgid" =~ ^[0-9]+$ ]] || continue
+    kill -TERM -- "-$pgid" 2>/dev/null || true
+  done
+  sleep 20
+  for pgid in "${_pgids[@]:-}"; do
+    [[ "$pgid" =~ ^[0-9]+$ ]] || continue
+    kill -KILL -- "-$pgid" 2>/dev/null || true
+  done
+}
+
+watchdog_11h20() {
+  local now remaining
+  now=$(date +%s); remaining=$((CELL_DEADLINE_TS-now))
+  if (( remaining > 0 )); then sleep "$remaining"; fi
+  mkdir -p "$STATE"
+  {
+    echo "11h20 wall-clock limit reached"
+    echo "cell_start_epoch=$CELL_START_TS"
+    echo "deadline_epoch=$CELL_DEADLINE_TS"
+    echo "reached_epoch=$(date +%s)"
+  } > "$TIMEOUT_FLAG"
+  echo "11h20 LIMIT REACHED — stopping active training and exporting."
+  stop_active_training_groups
+  pack_all_exports || true
+  pack_timeout_current_done || true
+  sync || true
+  echo "11h20 timeout export: $TIMEOUT_ZIP"
+}
+
+on_exit() {
+  local rc=$?
+  trap - EXIT
+  if [[ -n "${WATCHDOG_PID:-}" ]]; then kill "$WATCHDOG_PID" 2>/dev/null || true; fi
+  pack_all_exports || true
+  if [[ -f "$TIMEOUT_FLAG" ]] || [[ "$rc" -eq 124 ]]; then
+    pack_timeout_current_done || true
+  fi
+  exit "$rc"
+}
+trap on_exit EXIT
+
+echo "JOB=$JOB | $DATASET | $BACKBONE | ${EPOCHS}ep | methods=$METHODS_CSV | seeds=$SEEDS_CSV"
+
+mkdir -p "$STATE"
+python - <<'PYRESTORE'
+import os, zipfile
+from pathlib import Path
+job=os.environ["JOB"]; inp=Path("/kaggle/input"); work=Path("/kaggle/working")
+matches=list(inp.rglob(f"{job}_results.zip")) if inp.exists() else []
+if matches:
+    z=max(matches,key=lambda p:p.stat().st_mtime)
+    with zipfile.ZipFile(z) as f: f.extractall(work)
+    print("RESTORED",z)
+else:
+    print("No previous result ZIP attached for this exact chunk.")
+PYRESTORE
+
+rm -f "$TIMEOUT_FLAG"
+: > "$ACTIVE_PGIDS_FILE"
+watchdog_11h20 &
+WATCHDOG_PID=$!
+echo "11h20 watchdog PID=$WATCHDOG_PID"
+
+rm -rf "$REPO"
+for n in 1 2 3; do
+  git clone "$REPO_URL" "$REPO" && break
+  rm -rf "$REPO"; sleep $((n*5))
+done
+[[ -d "$REPO/.git" ]] || { echo "clone failed"; exit 2; }
+cd "$REPO"
+git fetch origin "$REPO_COMMIT" || true
+git checkout --detach "$REPO_COMMIT"
+echo "SOURCE_COMMIT=$(git rev-parse HEAD)"
+
+python -m pip install -q --upgrade-strategy only-if-needed   timm==1.0.15 thop==0.1.1.post2209072238 fvcore==0.1.5.post20221221
+
+python - <<'PYENV'
+import torch
+assert torch.cuda.is_available(), "Enable Kaggle GPU accelerator."
+print("Torch",torch.__version__,"CUDA",torch.version.cuda,"GPU count",torch.cuda.device_count())
+for i in range(torch.cuda.device_count()):
+    print(i,torch.cuda.get_device_name(i))
+PYENV
+
+python - <<'PYPATCH'
+import os
+from pathlib import Path
+repo=Path(os.environ["REPO"])
+
+# ------------------------------------------------------------
+# 1) Side-Tuning fixes for ResNet / EfficientNet / MobileNet / DenseNet.
+# ------------------------------------------------------------
+p=repo/"models/tuning_modules/side_tuning.py"
+t=p.read_text(encoding="utf-8")
+t=t.replace("side = checkpoint(self.side_net, x)",
+            "side = checkpoint(self.side_net, x, use_reentrant=False)")
+old='''            if isinstance(clf, nn.Sequential):
+                for m in reversed(clf):
+                    if isinstance(m, nn.Linear):
+                        return int(m.in_features)
+'''
+new='''            if isinstance(clf, nn.Sequential):
+                for m in clf:
+                    if isinstance(m, nn.Linear):
+                        return int(m.in_features)
+'''
+if old in t:
+    t=t.replace(old,new)
+old='''            elif hasattr(self.base, "forward_features"):
+                out = self.base.forward_features(x)
+            else:
+                out = self.base(x)
+        if out.dim() == 4:
+            out = self.pool(out).flatten(1)
+        return out
+'''
+new='''            elif hasattr(self.base, "forward_features"):
+                out = self.base.forward_features(x)
+            elif hasattr(self.base, "features"):
+                out = self.base.features(x)
+                if hasattr(self.base, "avgpool"):
+                    out = self.base.avgpool(out)
+            else:
+                out = self.base(x)
+        if out.dim() == 4:
+            out = self.pool(out).flatten(1)
+        elif out.dim() > 2:
+            out = torch.flatten(out, 1)
+        return out
+'''
+if old in t:
+    t=t.replace(old,new)
+elif 'elif hasattr(self.base, "features"):' not in t:
+    raise RuntimeError("Unexpected side_tuning.py layout")
+p.write_text(t,encoding="utf-8")
+
+# ------------------------------------------------------------
+# 2) Exact corrected shared-LR selection policy.
+# A failed/non-finite candidate excludes that LR globally, but does
+# not abort the entire method as long as another LR is valid for all seeds.
+# ------------------------------------------------------------
+p=repo/"tools/run_experiment.py"
+t=p.read_text(encoding="utf-8")
+replacement=r'''def _candidate_failure_reason(row: dict[str, Any]) -> str | None:
+    """Return why an LR-search row is unusable, or ``None`` when it is valid.
+
+    A failed hyperparameter trial is not itself a protocol failure.  In
+    particular, aggressive LoRA-Conv learning rates can occasionally diverge
+    and produce a non-finite loss.  The fair response is to mark that *whole LR*
+    ineligible across all seeds, rather than aborting the complete method or
+    selecting different LRs per seed.
+    """
+    try:
+        return_code = int(row.get("return_code", 1))
+    except (TypeError, ValueError):
+        return "invalid_return_code"
+    if return_code != 0:
+        return f"return_code={return_code}"
+
+    try:
+        best_val = float(row.get("best_val_acc1", float("nan")))
+    except (TypeError, ValueError):
+        return "invalid_best_val_acc1"
+    if not math.isfinite(best_val):
+        return "nonfinite_best_val_acc1"
+
+    try:
+        best_epoch = int(row.get("best_epoch", -1))
+    except (TypeError, ValueError):
+        return "invalid_best_epoch"
+    if best_epoch < 0:
+        return "missing_best_epoch"
+    return None
+
+
+def select_shared_lr(
+    candidate_rows: list[dict[str, Any]],
+    *,
+    seeds: list[int],
+    lr_candidates: list[float],
+) -> dict[str, Any]:
+    """Select one shared LR by mean validation accuracy across seeds.
+
+    Every seed/LR pair must still be *attempted*.  If a candidate LR fails or
+    yields a non-finite validation result for any seed, that LR is excluded for
+    every seed.  Selection is then performed only over LRs that are valid for
+    the complete requested seed set.  This keeps the shared-LR protocol intact
+    while allowing numerically unstable trials (notably high-LR LoRA-Conv
+    trials) to be treated as ordinary failed hyperparameter candidates.
+    """
+    expected = {(int(seed), float(lr)) for seed in seeds for lr in lr_candidates}
+    observed = {(int(row["seed"]), float(row["lr"])) for row in candidate_rows}
+    if observed != expected or len(candidate_rows) != len(expected):
+        missing = sorted(expected - observed)
+        extra = sorted(observed - expected)
+        raise RuntimeError(
+            "Fair LR search is incomplete or duplicated; "
+            f"missing={missing}, extra={extra}, rows={len(candidate_rows)}, expected={len(expected)}"
+        )
+
+    aggregates: list[dict[str, Any]] = []
+    invalid_candidates: list[dict[str, Any]] = []
+    excluded_lrs: list[float] = []
+
+    for lr in lr_candidates:
+        rows = sorted(
+            [row for row in candidate_rows if float(row["lr"]) == float(lr)],
+            key=lambda row: int(row["seed"]),
+        )
+        failures = []
+        for row in rows:
+            reason = _candidate_failure_reason(row)
+            if reason is not None:
+                failure = {
+                    "seed": int(row["seed"]),
+                    "lr": float(row["lr"]),
+                    "reason": reason,
+                    "return_code": row.get("return_code"),
+                    "best_val_acc1": row.get("best_val_acc1"),
+                    "output_dir": row.get("output_dir"),
+                }
+                failures.append(failure)
+                invalid_candidates.append(failure)
+
+        # Shared-LR fairness: an LR is either eligible for all requested seeds
+        # or excluded for all requested seeds.  Never cherry-pick per-seed LRs.
+        if failures:
+            excluded_lrs.append(float(lr))
+            continue
+
+        values = [float(row["best_val_acc1"]) for row in rows]
+        aggregates.append({
+            "lr": float(lr),
+            "mean_best_val_acc1": float(statistics.mean(values)),
+            "std_best_val_acc1": float(statistics.stdev(values)) if len(values) > 1 else 0.0,
+            "per_seed_best_val_acc1": {str(int(row["seed"])): float(row["best_val_acc1"]) for row in rows},
+            "per_seed_best_epoch": {str(int(row["seed"])): int(row["best_epoch"]) for row in rows},
+        })
+
+    if not aggregates:
+        raise RuntimeError(
+            "Fair LR search has no candidate that finished successfully with a "
+            "finite validation score for every requested seed. "
+            f"Failed candidates: {invalid_candidates}"
+        )
+
+    selected = max(
+        aggregates,
+        key=lambda row: (float(row["mean_best_val_acc1"]), -float(row["lr"])),
+    )
+    return {
+        "selection_scope": "method_across_seeds",
+        "aggregation": "mean_best_val_acc1",
+        "tie_break": "lower_lr",
+        "seeds": [int(s) for s in seeds],
+        # Keep the original attempted grid for auditability.
+        "lr_candidates": [float(lr) for lr in lr_candidates],
+        "eligible_lr_candidates": [float(row["lr"]) for row in aggregates],
+        "excluded_lr_candidates": excluded_lrs,
+        "invalid_candidates": invalid_candidates,
+        "failed_candidate_policy": "exclude_lr_globally_if_any_seed_invalid",
+        "candidates": aggregates,
+        "selected_lr": float(selected["lr"]),
+        "selected_mean_best_val_acc1": float(selected["mean_best_val_acc1"]),
+    }
+'''
+if "def _candidate_failure_reason(" in t:
+    start=t.index("def _candidate_failure_reason(")
+else:
+    start=t.index("def select_shared_lr(")
+end=t.index("\n\ndef candidate_for(",start)
+t=t[:start]+replacement+t[end:]
+p.write_text(t,encoding="utf-8")
+
+
+# ------------------------------------------------------------
+# 3) Session-resumable fair LR search.
+# Completed seed/LR validation candidates are checkpointed with a status JSON.
+# If the 11h20 guard stops a long method, the next Kaggle session reuses those
+# candidates and continues from the first unfinished candidate instead of
+# restarting the entire shared-LR sweep.
+# ------------------------------------------------------------
+p=repo/"tools/run_experiment.py"
+t=p.read_text(encoding="utf-8")
+old='''    # Partial/stale output cannot safely participate in a shared-LR selection.
+    shutil.rmtree(method_root, ignore_errors=True)
+    method_root.mkdir(parents=True, exist_ok=True)
+'''
+new='''    # With --skip-if-complete, keep partial validation candidates so a long
+    # fair shared-LR sweep can resume across Kaggle sessions. Candidate status
+    # files are validated before reuse below; without the flag, retain the
+    # original clean-start behavior.
+    if not skip_if_complete:
+        shutil.rmtree(method_root, ignore_errors=True)
+    method_root.mkdir(parents=True, exist_ok=True)
+'''
+if old in t:
+    t=t.replace(old,new,1)
+elif "keep partial validation candidates" not in t:
+    raise RuntimeError("Unexpected run_experiment.py partial-output block")
+
+old='''        for lr in lr_candidates:
+            candidate_dir = selection_root / f"lr_{lr_slug(lr)}"
+            shutil.rmtree(candidate_dir, ignore_errors=True)
+            candidate_dir.mkdir(parents=True, exist_ok=True)
+            args = dict(base)
+'''
+new='''        for lr in lr_candidates:
+            candidate_dir = selection_root / f"lr_{lr_slug(lr)}"
+            candidate_status_path = candidate_dir / "candidate_status.json"
+
+            if skip_if_complete and candidate_status_path.is_file():
+                try:
+                    cached = load_json(candidate_status_path)
+                    if (
+                        int(cached.get("seed", -1)) == int(seed)
+                        and float(cached.get("lr", float("nan"))) == float(lr)
+                        and str(Path(cached.get("output_dir", "")).resolve()) == str(candidate_dir.resolve())
+                    ):
+                        # A successful candidate must still have its best
+                        # checkpoint. Failed/non-finite candidates are terminal
+                        # and are also safe to reuse for auditability.
+                        cached_rc = int(cached.get("return_code", 1))
+                        ckpt_ok = Path(cached.get("checkpoint", "")).is_file()
+                        if cached_rc != 0 or ckpt_ok or dry_run:
+                            print(f"[reuse LR candidate] method={method_key} seed={seed} lr={lr}")
+                            candidate_rows.append(cached)
+                            continue
+                except (OSError, ValueError, TypeError, json.JSONDecodeError):
+                    pass
+
+            shutil.rmtree(candidate_dir, ignore_errors=True)
+            candidate_dir.mkdir(parents=True, exist_ok=True)
+            args = dict(base)
+'''
+if old in t:
+    t=t.replace(old,new,1)
+elif "candidate_status_path = candidate_dir" not in t:
+    raise RuntimeError("Unexpected run_experiment.py candidate-loop block")
+
+old='''            candidate_rows.append({
+                "seed": int(seed),
+                "lr": float(lr),
+                "best_val_acc1": best_val,
+                "best_epoch": best_epoch,
+                "return_code": int(rc),
+                "elapsed_seconds": float(elapsed),
+                "output_dir": str(candidate_dir),
+                "checkpoint": checkpoint,
+                "test_evaluated": False,
+            })
+'''
+new='''            candidate_row = {
+                "seed": int(seed),
+                "lr": float(lr),
+                "best_val_acc1": best_val,
+                "best_epoch": best_epoch,
+                "return_code": int(rc),
+                "elapsed_seconds": float(elapsed),
+                "output_dir": str(candidate_dir),
+                "checkpoint": checkpoint,
+                "test_evaluated": False,
+            }
+            candidate_rows.append(candidate_row)
+            candidate_status_path.write_text(
+                json.dumps(candidate_row, indent=2, default=str) + "\\n",
+                encoding="utf-8",
+            )
+'''
+if old in t:
+    t=t.replace(old,new,1)
+elif "candidate_row =" not in t or "candidate_status_path.write_text" not in t:
+    raise RuntimeError("Unexpected run_experiment.py candidate-row block")
+p.write_text(t,encoding="utf-8")
+
+# ------------------------------------------------------------
+# 3) Oxford Flowers17 support for N02/N04 only.
+# Uses the Oxford-provided split file; seed 0/1/2 -> official split 1/2/3.
+# ------------------------------------------------------------
+if os.environ.get("NEEDS_FLOWERS17_PATCH") == "1":
+    p=repo/"datasets/build.py"
+    t=p.read_text(encoding="utf-8")
+    if "def _build_flowers17(" not in t:
+        marker="\ndef _build_cars(args, split: str):"
+        block=r'''\n\nclass _Flowers17Official(torch.utils.data.Dataset):
+    """Oxford 17 Category Flower dataset using one official split per seed."""
+    def __init__(self, jpg_dir, image_ids, transform):
+        self.jpg_dir = Path(jpg_dir)
+        self.image_ids = [int(v) for v in image_ids]
+        self.transform = transform
+
+    def __len__(self):
+        return len(self.image_ids)
+
+    def __getitem__(self, index: int):
+        from PIL import Image
+        image_id = int(self.image_ids[index])
+        path = self.jpg_dir / f"image_{image_id:04d}.jpg"
+        image = Image.open(path).convert("RGB")
+        if self.transform is not None:
+            image = self.transform(image)
+        # Oxford Flowers17 contains 80 consecutively numbered images per class.
+        target = (image_id - 1) // 80
+        return image, int(target)
+
+
+def _build_flowers17(args, split: str):
+    """Use the Oxford-provided train/validation/test splits.
+
+    Seeds 0,1,2 map deterministically to official split 1,2,3 so every method
+    sees the same split for a given seed.
+    """
+    from scipy.io import loadmat
+    from torchvision.datasets.utils import download_and_extract_archive, download_url
+
+    root = Path(args.data_path) / "flowers17"
+    root.mkdir(parents=True, exist_ok=True)
+    jpg_dir = root / "jpg"
+    split_file = root / "datasplits.mat"
+
+    if not jpg_dir.is_dir() or len(list(jpg_dir.glob("image_*.jpg"))) != 1360:
+        download_and_extract_archive(
+            "https://www.robots.ox.ac.uk/~vgg/data/flowers/17/17flowers.tgz",
+            download_root=str(root),
+            filename="17flowers.tgz",
+        )
+    if not split_file.is_file():
+        download_url(
+            "https://www.robots.ox.ac.uk/~vgg/data/flowers/17/datasplits.mat",
+            root=str(root),
+            filename="datasplits.mat",
+        )
+
+    official_split = int(getattr(args, "seed", 0)) % 3 + 1
+    key = {"train": "trn", "val": "val", "test": "tst"}[split] + str(official_split)
+    mat = loadmat(split_file)
+    if key not in mat:
+        raise RuntimeError(f"Oxford Flowers17 split key {key!r} not found in {split_file}")
+    image_ids = [int(v) for v in mat[key].reshape(-1).tolist()]
+    if not image_ids:
+        raise RuntimeError(f"Oxford Flowers17 split {key} is empty")
+    ds = _Flowers17Official(
+        jpg_dir=jpg_dir,
+        image_ids=image_ids,
+        transform=_img_transforms(args, split == "train"),
+    )
+    return ds, 17\n'''
+        if marker not in t:
+            raise RuntimeError("Could not locate Flowers17 insertion point")
+        t=t.replace(marker,block+marker,1)
+    if '("flowers17", "oxfordflowers17", "oxford_flowers17"): _build_flowers17,' not in t:
+        marker='    ("flowers102", "oxfordflowers102", "oxford_flowers102"): _build_flowers102,'
+        add='    ("flowers17", "oxfordflowers17", "oxford_flowers17"): _build_flowers17,\n'
+        if marker not in t:
+            raise RuntimeError("Could not locate dataset router insertion point")
+        t=t.replace(marker,add+marker,1)
+    p.write_text(t,encoding="utf-8")
+
+print("PATCHES APPLIED")
+PYPATCH
+
+python - <<'PYCFG'
+import copy, os, yaml
+from pathlib import Path
+repo=Path(os.environ["REPO"])
+cfg=yaml.safe_load((repo/"configs/experiments"/os.environ["BASE_CONFIG"]).read_text(encoding="utf-8"))
+defs=yaml.safe_load((repo/"configs/experiments/table_14_15.yaml").read_text(encoding="utf-8"))["methods"]
+
+cfg["experiment_id"]=os.environ["EXPERIMENT_ID"]
+cfg["dataset"]=os.environ["DATASET"]
+cfg["backbone"]=os.environ["BACKBONE"]
+cfg["epochs"]=int(os.environ["EPOCHS"])
+cfg["batch_size"]=int(os.environ["BATCH_SIZE"])
+cfg["seeds"]=[0,1,2]
+
+canonical=["dt1d","full","linear","bitfit","ssf","conv_r4","bam","residual","lora_conv","sidetune"]
+cfg.setdefault("methods",{})
+for m in canonical:
+    cfg["methods"][m]=copy.deepcopy(defs[m])
+cfg["method_order"]=canonical
+cfg.setdefault("fairness",{})
+cfg["fairness"]["failed_candidate_policy"]="exclude_lr_globally_if_any_seed_invalid"
+
+out=Path(os.environ["CONFIG"])
+out.parent.mkdir(parents=True,exist_ok=True)
+out.write_text(yaml.safe_dump(cfg,sort_keys=False),encoding="utf-8")
+
+expected=[1e-4,3e-4,1e-3,3e-3,5e-3]
+actual=[float(x) for x in cfg["fairness"]["lr_candidates"]]
+assert actual == expected, (actual,expected)
+for m in os.environ["METHODS_CSV"].split(","):
+    assert m in cfg["methods"], m
+assert cfg["method_order"] == canonical
+print("CONFIG VERIFIED:",cfg["experiment_id"],cfg["dataset"],cfg["backbone"],cfg["epochs"],cfg["batch_size"])
+print("CANONICAL METHODS:",",".join(cfg["method_order"]))
+print("THIS CHUNK:",os.environ["METHODS_CSV"])
+PYCFG
+
+python tools/validate_dt1d.py
+python tools/validate_all_configs.py
+
+# CPU end-to-end smoke catches method/backbone integration before GPU work.
+rm -rf "$STATE/smoke"
+python tools/run_experiment.py "$CONFIG"   --methods "$METHODS_CSV" --seeds 0   --output-root "$STATE/smoke" --data-path "$DATA" --device cpu --smoke
+
+# Preload and verify the exact dataset splits + pretrained backbone.
+mkdir -p "$DATA"
+python - <<'PYPRELOAD'
+import os
+from types import SimpleNamespace
+from datasets.build import build_dataset_split
+from torchvision import models
+
+args=SimpleNamespace(
+    data_path=os.environ["DATA"],
+    dataset=os.environ["DATASET"],
+    input_size=224,
+    train_aug="standard",
+    imagenet_norm=True,
+    imagenet_default_mean_and_std=True,
+    seed=0,
+    val_ratio=0.2,
+    test_ratio=0.1,
+    split_file=None,
+    output_dir=None,
+)
+sizes={}
+classes=None
+for split in ("train","val","test"):
+    ds,n=build_dataset_split(args,split)
+    sizes[split]=len(ds)
+    classes=n
+assert all(v>0 for v in sizes.values()), sizes
+print("DATASET PRELOAD PASS",os.environ["DATASET"],"classes",classes,"sizes",sizes)
+
+fn=getattr(models,os.environ["BACKBONE"])
+model=fn(weights="DEFAULT")
+del model
+print("BACKBONE PRELOAD PASS",os.environ["BACKBONE"])
+PYPRELOAD
+
+python tools/run_experiment.py "$CONFIG"   --methods "$METHODS_CSV" --seeds "$SEEDS_CSV"   --output-root "$STATE/plan" --data-path "$DATA" --device cuda:0 --plan-only
+
+mkdir -p "$STATE/outputs" "$STATE/logs"
+IFS=',' read -ra METHODS <<< "$METHODS_CSV"
+GPU_COUNT=$(python - <<'PYGPU'
+import torch
+print(torch.cuda.device_count())
+PYGPU
+)
+[[ "$GPU_COUNT" -ge 1 ]] || exit 3
+if [[ "$GPU_COUNT" -ge 2 ]]; then WAVE=2; else WAVE=1; fi
+
+launch_one() {
+  local method="$1" device="$2" out="$STATE/outputs/$1" log="$STATE/logs/$1.log"
+  mkdir -p "$out"
+  setsid bash -c '
+    set -Eeuo pipefail
+    method="$1"; device="$2"; out="$3"; log="$4"
+    python "$REPO/tools/run_experiment.py" "$CONFIG"       --methods "$method" --seeds "$SEEDS_CSV"       --output-root "$out" --data-path "$DATA" --device "$device" --skip-if-complete       2>&1 | tee "$log"
+  ' _ "$method" "$device" "$out" "$log" &
+  LAST_LAUNCH_PID=$!
+}
+
+for ((i=0; i<${#METHODS[@]}; i+=WAVE)); do
+  now=$(date +%s)
+  if (( now >= CELL_DEADLINE_TS )); then
+    [[ -f "$TIMEOUT_FLAG" ]] || echo "11h20 wall-clock limit reached before next wave" > "$TIMEOUT_FLAG"
+    pack_all_exports
+    pack_timeout_current_done
+    sync || true
+    echo "11h20 timeout export: $TIMEOUT_ZIP"
+    trap - EXIT
+    exit 124
+  fi
+  echo "Remaining cell budget: $((CELL_DEADLINE_TS-now)) seconds"
+
+  pids=(); names=()
+  for ((j=0; j<WAVE && i+j<${#METHODS[@]}; j++)); do
+    m="${METHODS[i+j]}"
+    launch_one "$m" "cuda:$j"
+    pids+=("$LAST_LAUNCH_PID"); names+=("$m")
+  done
+  printf '%s\n' "${pids[@]}" > "$ACTIVE_PGIDS_FILE"
+
+  set +e; wave_rc=0
+  for k in "${!pids[@]}"; do
+    wait "${pids[$k]}"; rc=$?
+    if [[ "$rc" -ne 0 ]]; then
+      echo "STOP/FAIL ${names[$k]} rc=$rc"
+      wave_rc=$rc
+    fi
+  done
+  set -e
+  : > "$ACTIVE_PGIDS_FILE"
+  pack_all_exports
+
+  if [[ -f "$TIMEOUT_FLAG" ]]; then
+    pack_timeout_current_done || true
+    sync || true
+    echo "11h20 guard activated."
+    echo "Current completed results: $TIMEOUT_ZIP"
+    echo "Resume metadata/state:      $ZIP"
+    echo "Attach $ZIP and rerun this SAME chunk to continue."
+    trap - EXIT
+    exit 124
+  fi
+  [[ "$wave_rc" -eq 0 ]] || exit "$wave_rc"
+done
+
+python - <<'PYVERIFY'
+import json, os
+from pathlib import Path
+state=Path(os.environ["STATE"]); target=os.environ["EXPERIMENT_ID"]
+methods=[x for x in os.environ["METHODS_CSV"].split(",") if x]
+seeds=[0,1,2]
+status={}
+for m in methods:
+    root=state/"outputs"/m/target/m
+    selection=root/"lr_selection_summary.json"
+    complete=selection.is_file() and all((root/f"seed_{s}"/"test_summary.json").is_file() for s in seeds)
+    status[m]={"complete":bool(complete),"selection_summary":str(selection)}
+(state/"STATUS.json").write_text(json.dumps(status,indent=2)+"\n")
+print(json.dumps(status,indent=2))
+if not all(v["complete"] for v in status.values()):
+    raise SystemExit("Incomplete method(s)")
+PYVERIFY
+
+if [[ -n "${WATCHDOG_PID:-}" ]]; then kill "$WATCHDOG_PID" 2>/dev/null || true; fi
+trap - EXIT
+pack_all_exports
+echo "SUCCESS DONE-ONLY ZIP: $DONE_ZIP"
+echo "SUCCESS METHOD-LEVEL RESUME ZIP: $ZIP"
