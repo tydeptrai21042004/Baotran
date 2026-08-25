@@ -1,0 +1,146 @@
+%%bash
+set -Eeuo pipefail
+
+# ============================================================
+# C13 DT1D-Adapter — EuroSAT + MobileNetV3-Small
+# INDEPENDENT SESSION: SEED 0
+# 25 epochs, batch size 32, fixed LR = 5e-3
+# No dependency on Seed 0/1/2 outputs from any other session.
+# ============================================================
+
+SEED=0
+FIXED_LR=0.005
+WORK=/kaggle/working
+REPO="$WORK/whc-dt1d-C13-seed${SEED}"
+DATA="$WORK/C13_EuroSAT_data_seed${SEED}"
+OUTROOT="$WORK/C13_DT1D_seed${SEED}_fixedlr5e3"
+FINAL_ZIP="$WORK/C13_DT1D_seed${SEED}_FIXEDLR5e-3_results.zip"
+REPO_URL="${DT1D_CNN_REPO_URL:-https://github.com/tydeptrai21042004/whc-dt1d.git}"
+
+SESSION_START=$(date +%s)
+HARD_SECONDS=$((11*3600 + 20*60))
+
+pack_results() {
+  rm -f "$FINAL_ZIP"
+  if [[ -d "$OUTROOT" ]]; then
+    (cd "$WORK" && zip -qr "$FINAL_ZIP" "$(basename "$OUTROOT")")
+    echo "[ZIP] $FINAL_ZIP"
+    ls -lh "$FINAL_ZIP" || true
+  fi
+}
+
+# Always export whatever has completed if the cell errors or hits 11h20.
+trap 'rc=$?; trap - EXIT; pack_results || true; exit $rc' EXIT
+
+# 1) Fresh independent GitHub clone.
+rm -rf "$REPO" "$OUTROOT"
+git clone --depth 1 "$REPO_URL" "$REPO"
+cd "$REPO"
+
+echo "GIT_COMMIT=$(git rev-parse HEAD)"
+mkdir -p "$OUTROOT"
+git rev-parse HEAD > "$OUTROOT/GIT_COMMIT.txt"
+printf 'seed=%s\nfixed_lr=%s\n' "$SEED" "$FIXED_LR" > "$OUTROOT/RUN_NOTE.txt"
+
+# 2) Dependencies + GPU check.
+python -m pip install -q --upgrade-strategy only-if-needed -r requirements-kaggle.txt
+python - <<'PYGPU'
+import torch
+assert torch.cuda.is_available(), "Enable a Kaggle GPU accelerator first."
+print("GPU:", torch.cuda.get_device_name(0))
+PYGPU
+
+# 3) Make a temporary C13 config for THIS seed only.
+#    The LR grid contains exactly one value, so there is only ONE 25-epoch
+#    DT1D training run. The test split is then evaluated once using the
+#    best-validation checkpoint from that run.
+python - "$SEED" "$FIXED_LR" <<'PYCFG'
+import sys
+from pathlib import Path
+import yaml
+
+seed = int(sys.argv[1])
+lr = float(sys.argv[2])
+src = Path("configs/experiments/table_18_19.yaml")
+dst = Path(f"/kaggle/working/C13_DT1D_seed{seed}_fixedlr.yaml")
+
+cfg = yaml.safe_load(src.read_text())
+assert cfg["dataset"] == "eurosat"
+assert cfg["backbone"] == "mobilenet_v3_small"
+assert int(cfg["epochs"]) == 25
+assert int(cfg["batch_size"]) == 32
+assert "dt1d" in cfg["methods"]
+
+cfg["seeds"] = [seed]
+cfg["fairness"]["lr_candidates"] = [lr]
+cfg["description"] = (
+    f"C13 independent DT1D completion run for seed {seed}; "
+    f"fixed LR={lr:g}; one validation-selected checkpoint; test evaluated once."
+)
+
+dst.write_text(yaml.safe_dump(cfg, sort_keys=False))
+print(dst)
+PYCFG
+
+CFG="$WORK/C13_DT1D_seed${SEED}_fixedlr.yaml"
+cp "$CFG" "$OUTROOT/C13_DT1D_seed${SEED}_fixedlr.yaml"
+
+# Show the execution plan before spending GPU time.
+python tools/run_experiment.py "$CFG" \
+  --output-root "$OUTROOT/outputs" \
+  --data-path "$DATA" \
+  --device cuda \
+  --methods dt1d \
+  --seeds "$SEED" \
+  --plan-only
+
+# 4) Run with an 11h20 wall-clock safety guard.
+ELAPSED=$(( $(date +%s) - SESSION_START ))
+LEFT=$(( HARD_SECONDS - ELAPSED ))
+if (( LEFT <= 300 )); then
+  echo "ERROR: less than 5 minutes remain before the 11h20 safety limit."
+  exit 124
+fi
+
+echo "Starting C13 DT1D Seed $SEED with $((LEFT/60)) guarded minutes remaining."
+
+timeout --signal=TERM --kill-after=30s "${LEFT}s" \
+  python tools/run_experiment.py "$CFG" \
+    --output-root "$OUTROOT/outputs" \
+    --data-path "$DATA" \
+    --device cuda \
+    --methods dt1d \
+    --seeds "$SEED"
+
+# 5) Verify final result exists.
+TEST_JSON="$OUTROOT/outputs/table_18_19/dt1d/seed_${SEED}/test_summary.json"
+RUN_JSON="$OUTROOT/outputs/table_18_19/dt1d/seed_${SEED}/run_metadata.json"
+
+[[ -f "$TEST_JSON" ]] || {
+  echo "ERROR: final test_summary.json not produced."
+  exit 5
+}
+[[ -f "$RUN_JSON" ]] || {
+  echo "ERROR: final run_metadata.json not produced."
+  exit 6
+}
+
+python - "$TEST_JSON" <<'PYSHOW'
+import json, sys
+p = sys.argv[1]
+d = json.load(open(p))
+print("\n========== FINAL C13 DT1D RESULT ==========")
+print("test_summary:", p)
+print("Best val Acc@1 :", d.get("best_val_acc1"))
+print("Test Acc@1     :", d.get("test_acc1_at_best_val", d.get("acc1")))
+print("Test Acc@5     :", d.get("acc5"))
+print("Test loss      :", d.get("loss"))
+print("Selected epoch :", d.get("selected_checkpoint_epoch"))
+print("===========================================\n")
+PYSHOW
+
+pack_results
+trap - EXIT
+
+echo "DONE: C13 DT1D Seed $SEED"
+echo "SEND ME: $FINAL_ZIP"
