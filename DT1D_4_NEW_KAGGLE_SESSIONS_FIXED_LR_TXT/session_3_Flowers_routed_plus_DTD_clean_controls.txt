@@ -1,0 +1,187 @@
+#!/usr/bin/env bash
+# Paste this whole file into a Kaggle %%bash cell, or save it and run: bash session.txt
+set -Eeuo pipefail
+
+SESSION_START_TS=$(date +%s)
+# Stop GPU work at 11h45 from script start, leaving ~5 minutes for a partial/full ZIP before 11h50.
+SESSION_CUTOFF_SECONDS=$((11*3600 + 45*60))
+PINNED_COMMIT="3227849dcd2ef54aca2027a315714e262fa1f82b"
+REPO_URL="https://github.com/tydeptrai21042004/whc-dt1d.git"
+ROOT="/kaggle/working/whc-dt1d"
+DATA="/kaggle/working/data"
+
+SESSION="S3_FLOWERS_ROUTED_PLUS_DTD_AXIS_UNSHARED"
+OUT="/kaggle/working/${SESSION}_results"
+ZIP="/kaggle/working/${SESSION}_results.zip"
+LOG="/kaggle/working/${SESSION}.log"
+CUSTOM="/kaggle/working/${SESSION}_configs"
+QUEUE="/kaggle/working/${SESSION}_queue.sh"
+
+rm -rf "$ROOT" "$OUT" "$ZIP" "$LOG" "$CUSTOM" "$QUEUE"
+mkdir -p "$DATA" "$OUT" "$CUSTOM"
+
+# Archive on normal completion, timeout, or any later script error.
+FINALIZED=0
+finalize() {
+  if [[ "${FINALIZED:-0}" -eq 1 ]]; then return 0; fi
+  FINALIZED=1
+  set +e
+  echo "[FINALIZE] Building partial/full result package..."
+  cd "$ROOT" 2>/dev/null || cd /kaggle/working
+
+  # Aggregate every experiment produced by this session. allow-incomplete is intentional:
+  # if the 11h45 cutoff fires, all completed seeds/LRs are still summarized.
+  if [[ -f "$ROOT/tools/aggregate_cnn_paper.py" ]]; then
+    python "$ROOT/tools/aggregate_cnn_paper.py" \
+      --root "$OUT" --require-seeds 0,1,2 --allow-incomplete \
+      --output-dir "$OUT/_aggregate_all" >/dev/null 2>&1 || true
+  fi
+
+  python - "$OUT" <<'PYMAN'
+from pathlib import Path
+import json, sys, time
+root=Path(sys.argv[1])
+m={
+  "created_unix": time.time(),
+  "test_summaries": [],
+  "lr_selection_summaries": [],
+  "convergence_summaries": [],
+  "efficiency_profiles": [],
+  "run_status": [],
+}
+for key, pat in [
+  ("test_summaries", "test_summary.json"),
+  ("lr_selection_summaries", "lr_selection_summary.json"),
+  ("convergence_summaries", "convergence_summary.json"),
+  ("efficiency_profiles", "efficiency_profile.json"),
+  ("run_status", "run_status.json"),
+]:
+    for p in root.rglob(pat):
+        try:
+            d=json.loads(p.read_text())
+            m[key].append({"path":str(p.relative_to(root)), **d})
+        except Exception:
+            pass
+(root/"PARTIAL_OR_COMPLETE_MANIFEST.json").write_text(json.dumps(m,indent=2,default=str)+"\n")
+
+# Human-readable list of completed test summaries and their selected LR.
+lines=[]
+for row in m["test_summaries"]:
+    lines.append(
+        f"{row.get('path')} | selected_lr={row.get('selected_lr')} | "
+        f"best_val={row.get('best_val_acc1')} | test_acc1={row.get('test_acc1_at_best_val', row.get('acc1'))}"
+    )
+(root/"COMPLETED_TEST_RESULTS.txt").write_text("\n".join(lines)+("\n" if lines else ""))
+PYMAN
+
+  cp "$LOG" "$OUT/session_stdout.log" 2>/dev/null || true
+  cp "$QUEUE" "$OUT/session_queue.sh" 2>/dev/null || true
+  cp -r "$CUSTOM" "$OUT/generated_configs" 2>/dev/null || true
+  printf '%s\n' "$PINNED_COMMIT" > "$OUT/PINNED_COMMIT.txt"
+
+  cd /kaggle/working
+  rm -f "$ZIP"
+  # Exclude model checkpoints to make the safety export fast and small.
+  zip -qr "$ZIP" "$(basename "$OUT")" \
+    -x '*.pth' '*.pt' '*.ckpt' '*/__pycache__/*' '*.pyc' || true
+  echo "============================================================"
+  echo "RESULT ZIP: $ZIP"
+  ls -lh "$ZIP" 2>/dev/null || true
+  echo "============================================================"
+}
+trap finalize EXIT
+
+# Exact code version used to build the supplied repository ZIP.
+timeout 15m git clone "$REPO_URL" "$ROOT"
+cd "$ROOT"
+git checkout --detach "$PINNED_COMMIT"
+
+# Keep Kaggle's CUDA torch/torchvision; only install the repo's Kaggle add-ons.
+timeout 30m python -m pip install -q --upgrade-strategy only-if-needed -r requirements-kaggle.txt
+
+# Repository release checks before any real GPU training.
+timeout 15m bash validate_release.sh
+nvidia-smi
+
+git rev-parse HEAD > "$OUT/GIT_COMMIT.txt"
+cat VERSION > "$OUT/REPO_VERSION.txt"
+
+remaining_seconds() {
+  local now deadline rem
+  now=$(date +%s)
+  deadline=$((SESSION_START_TS + SESSION_CUTOFF_SECONDS))
+  rem=$((deadline - now))
+  if (( rem < 1 )); then rem=1; fi
+  echo "$rem"
+}
+
+run_with_global_cutoff() {
+  local rem rc
+  rem=$(remaining_seconds)
+  echo "[TIME BOX] Remaining GPU-work budget: ${rem}s"
+  set +e
+  timeout --signal=INT --kill-after=120s "${rem}s" bash "$QUEUE" 2>&1 | tee "$LOG"
+  rc=${PIPESTATUS[0]}
+  set -e
+  if [[ "$rc" -eq 124 || "$rc" -eq 130 || "$rc" -eq 137 ]]; then
+    echo "[TIME BOX] GPU work stopped so results can be zipped before 11h50." | tee -a "$LOG"
+  elif [[ "$rc" -ne 0 ]]; then
+    echo "[WARNING] Queue exited with code $rc. Completed outputs will still be archived." | tee -a "$LOG"
+  else
+    echo "[DONE] All work in this session finished before the cutoff." | tee -a "$LOG"
+  fi
+}
+
+
+python - "$ROOT" "$CUSTOM" <<'PYCFG'
+from pathlib import Path
+import sys, yaml
+root=Path(sys.argv[1]); out=Path(sys.argv[2])
+
+def load(rel): return yaml.safe_load((root/rel).read_text())
+def save(cfg,name): (out/name).write_text(yaml.safe_dump(cfg,sort_keys=False))
+def ab_method(label, **kwargs):
+    args={"tuning_method":"dt1d_ablation","freeze_backbone":True,"dt_cache_kernel":True}
+    args.update(kwargs)
+    return {"label":label,"reviewer_control":True,"args":args}
+
+# Flowers previous routed/multi-branch reconstruction only (historical reviewer control).
+fl=load("configs/experiments/ablation_flowers102_resnet50.yaml")
+fl["experiment_id"]="flowers102_r50_previous_routed_reference"
+fl["methods"]={"routing_reference":fl["methods"]["routing_reference"]}
+fl["method_order"]=["routing_reference"]
+save(fl,"flowers_previous_routed.yaml")
+
+# DTD clean FINAL-operator controls: W-only and group size 1 (per-channel structured coefficients).
+dtd=load("configs/experiments/ablation_dtd_resnet18.yaml")
+dtd["experiment_id"]="dtd_r18_clean_axis_unshared_extension"
+dtd["methods"]={
+  "width_only_final":ab_method("Final DT1D width-only",dt_axis="w"),
+  "unshared_final":ab_method("Final structured per-channel coefficients (g=1)",dt_alpha_group=1),
+}
+dtd["method_order"]=["width_only_final","unshared_final"]
+save(dtd,"dtd_width_unshared.yaml")
+PYCFG
+
+python tools/run_experiment.py "$CUSTOM/flowers_previous_routed.yaml" --plan-only --methods routing_reference --seeds 0,1,2 --output-root "$OUT/_plans" --data-path "$DATA" --device cuda
+python tools/run_experiment.py "$CUSTOM/dtd_width_unshared.yaml" --plan-only --methods width_only_final,unshared_final --seeds 0,1,2 --output-root "$OUT/_plans" --data-path "$DATA" --device cuda
+python tools/run_experiment.py "$CUSTOM/flowers_previous_routed.yaml" --smoke --methods routing_reference --seeds 0 --output-root "$OUT/_smoke" --data-path "$DATA" --device cpu
+python tools/run_experiment.py "$CUSTOM/dtd_width_unshared.yaml" --smoke --methods width_only_final,unshared_final --seeds 0 --output-root "$OUT/_smoke" --data-path "$DATA" --device cpu
+
+cat > "$OUT/SESSION_PLAN.txt" <<'PLAN'
+1) Flowers102/ResNet-50 previous routed/multi-branch reconstruction, 10 ep, seeds 0/1/2, 3-LR ablation grid.
+2) DTD/ResNet-18 clean final DT1D W-only, 10 ep, seeds 0/1/2, 3-LR ablation grid.
+3) DTD/ResNet-18 clean final DT1D unshared/group-size-1, 10 ep, seeds 0/1/2, 3-LR ablation grid.
+PLAN
+
+cat > "$QUEUE" <<EOFQ
+#!/usr/bin/env bash
+set -Eeuo pipefail
+cd "$ROOT"
+python tools/run_experiment.py "$CUSTOM/flowers_previous_routed.yaml" \
+  --methods routing_reference --seeds 0,1,2 --data-path "$DATA" --device cuda --output-root "$OUT" --skip-if-complete
+python tools/run_experiment.py "$CUSTOM/dtd_width_unshared.yaml" \
+  --methods width_only_final,unshared_final --seeds 0,1,2 --data-path "$DATA" --device cuda --output-root "$OUT" --skip-if-complete
+EOFQ
+chmod +x "$QUEUE"
+run_with_global_cutoff

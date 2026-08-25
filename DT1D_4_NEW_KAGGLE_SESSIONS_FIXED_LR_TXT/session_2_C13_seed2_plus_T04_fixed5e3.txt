@@ -1,0 +1,184 @@
+#!/usr/bin/env bash
+# Paste this whole file into a Kaggle %%bash cell, or save it and run: bash session.txt
+set -Eeuo pipefail
+
+SESSION_START_TS=$(date +%s)
+# Stop GPU work at 11h45 from script start, leaving ~5 minutes for a partial/full ZIP before 11h50.
+SESSION_CUTOFF_SECONDS=$((11*3600 + 45*60))
+PINNED_COMMIT="3227849dcd2ef54aca2027a315714e262fa1f82b"
+REPO_URL="https://github.com/tydeptrai21042004/whc-dt1d.git"
+ROOT="/kaggle/working/whc-dt1d"
+DATA="/kaggle/working/data"
+
+SESSION="S2_C13_SEED2_PLUS_T04_FIXED5E3"
+OUT="/kaggle/working/${SESSION}_results"
+ZIP="/kaggle/working/${SESSION}_results.zip"
+LOG="/kaggle/working/${SESSION}.log"
+CUSTOM="/kaggle/working/${SESSION}_configs"
+QUEUE="/kaggle/working/${SESSION}_queue.sh"
+
+rm -rf "$ROOT" "$OUT" "$ZIP" "$LOG" "$CUSTOM" "$QUEUE"
+mkdir -p "$DATA" "$OUT" "$CUSTOM"
+
+# Archive on normal completion, timeout, or any later script error.
+FINALIZED=0
+finalize() {
+  if [[ "${FINALIZED:-0}" -eq 1 ]]; then return 0; fi
+  FINALIZED=1
+  set +e
+  echo "[FINALIZE] Building partial/full result package..."
+  cd "$ROOT" 2>/dev/null || cd /kaggle/working
+
+  # Aggregate every experiment produced by this session. allow-incomplete is intentional:
+  # if the 11h45 cutoff fires, all completed seeds/LRs are still summarized.
+  if [[ -f "$ROOT/tools/aggregate_cnn_paper.py" ]]; then
+    python "$ROOT/tools/aggregate_cnn_paper.py" \
+      --root "$OUT" --require-seeds 0,1,2 --allow-incomplete \
+      --output-dir "$OUT/_aggregate_all" >/dev/null 2>&1 || true
+  fi
+
+  python - "$OUT" <<'PYMAN'
+from pathlib import Path
+import json, sys, time
+root=Path(sys.argv[1])
+m={
+  "created_unix": time.time(),
+  "test_summaries": [],
+  "lr_selection_summaries": [],
+  "convergence_summaries": [],
+  "efficiency_profiles": [],
+  "run_status": [],
+}
+for key, pat in [
+  ("test_summaries", "test_summary.json"),
+  ("lr_selection_summaries", "lr_selection_summary.json"),
+  ("convergence_summaries", "convergence_summary.json"),
+  ("efficiency_profiles", "efficiency_profile.json"),
+  ("run_status", "run_status.json"),
+]:
+    for p in root.rglob(pat):
+        try:
+            d=json.loads(p.read_text())
+            m[key].append({"path":str(p.relative_to(root)), **d})
+        except Exception:
+            pass
+(root/"PARTIAL_OR_COMPLETE_MANIFEST.json").write_text(json.dumps(m,indent=2,default=str)+"\n")
+
+# Human-readable list of completed test summaries and their selected LR.
+lines=[]
+for row in m["test_summaries"]:
+    lines.append(
+        f"{row.get('path')} | selected_lr={row.get('selected_lr')} | "
+        f"best_val={row.get('best_val_acc1')} | test_acc1={row.get('test_acc1_at_best_val', row.get('acc1'))}"
+    )
+(root/"COMPLETED_TEST_RESULTS.txt").write_text("\n".join(lines)+("\n" if lines else ""))
+PYMAN
+
+  cp "$LOG" "$OUT/session_stdout.log" 2>/dev/null || true
+  cp "$QUEUE" "$OUT/session_queue.sh" 2>/dev/null || true
+  cp -r "$CUSTOM" "$OUT/generated_configs" 2>/dev/null || true
+  printf '%s\n' "$PINNED_COMMIT" > "$OUT/PINNED_COMMIT.txt"
+
+  cd /kaggle/working
+  rm -f "$ZIP"
+  # Exclude model checkpoints to make the safety export fast and small.
+  zip -qr "$ZIP" "$(basename "$OUT")" \
+    -x '*.pth' '*.pt' '*.ckpt' '*/__pycache__/*' '*.pyc' || true
+  echo "============================================================"
+  echo "RESULT ZIP: $ZIP"
+  ls -lh "$ZIP" 2>/dev/null || true
+  echo "============================================================"
+}
+trap finalize EXIT
+
+# Exact code version used to build the supplied repository ZIP.
+timeout 15m git clone "$REPO_URL" "$ROOT"
+cd "$ROOT"
+git checkout --detach "$PINNED_COMMIT"
+
+# Keep Kaggle's CUDA torch/torchvision; only install the repo's Kaggle add-ons.
+timeout 30m python -m pip install -q --upgrade-strategy only-if-needed -r requirements-kaggle.txt
+
+# Repository release checks before any real GPU training.
+timeout 15m bash validate_release.sh
+nvidia-smi
+
+git rev-parse HEAD > "$OUT/GIT_COMMIT.txt"
+cat VERSION > "$OUT/REPO_VERSION.txt"
+
+remaining_seconds() {
+  local now deadline rem
+  now=$(date +%s)
+  deadline=$((SESSION_START_TS + SESSION_CUTOFF_SECONDS))
+  rem=$((deadline - now))
+  if (( rem < 1 )); then rem=1; fi
+  echo "$rem"
+}
+
+run_with_global_cutoff() {
+  local rem rc
+  rem=$(remaining_seconds)
+  echo "[TIME BOX] Remaining GPU-work budget: ${rem}s"
+  set +e
+  timeout --signal=INT --kill-after=120s "${rem}s" bash "$QUEUE" 2>&1 | tee "$LOG"
+  rc=${PIPESTATUS[0]}
+  set -e
+  if [[ "$rc" -eq 124 || "$rc" -eq 130 || "$rc" -eq 137 ]]; then
+    echo "[TIME BOX] GPU work stopped so results can be zipped before 11h50." | tee -a "$LOG"
+  elif [[ "$rc" -ne 0 ]]; then
+    echo "[WARNING] Queue exited with code $rc. Completed outputs will still be archived." | tee -a "$LOG"
+  else
+    echo "[DONE] All work in this session finished before the cutoff." | tee -a "$LOG"
+  fi
+}
+
+
+python - "$ROOT" "$CUSTOM" <<'PYCFG'
+from pathlib import Path
+import sys, yaml
+root=Path(sys.argv[1]); out=Path(sys.argv[2])
+
+def load(rel): return yaml.safe_load((root/rel).read_text())
+def save(cfg,name): (out/name).write_text(yaml.safe_dump(cfg,sort_keys=False))
+
+# Mandatory C13 completion: EuroSAT/MobileNetV3-Small, seed 2 only, fixed LR=5e-3.
+c13=load("configs/experiments/table_18_19.yaml")
+c13["experiment_id"]="c13_eurosat_mv3s_dt1d_seed2_fixed5e3"
+c13["seeds"]=[2]
+c13["fairness"]["lr_candidates"]=[0.005]
+c13["methods"]={"dt1d":c13["methods"]["dt1d"]}
+c13["method_order"]=["dt1d"]
+c13["description"]="C13 DT1D independent seed-2 completion at the pre-fixed LR=5e-3."
+save(c13,"c13_seed2_fixed5e3.yaml")
+
+# T04: Flowers102 / ResNet-50 / 100 ep, FIXED LR=5e-3, seeds 0/1/2.
+t04=load("configs/experiments/table_04.yaml")
+t04["experiment_id"]="t04_flowers102_r50_100_dt1d_fixed5e3"
+t04["fairness"]["lr_candidates"]=[0.005]
+t04["methods"]={"dt1d":t04["methods"]["dt1d"]}
+t04["method_order"]=["dt1d"]
+t04["description"]="DT1D-only T04 completion using a pre-fixed LR=5e-3; no LR sweep."
+save(t04,"t04_fixed5e3.yaml")
+PYCFG
+
+python tools/run_experiment.py "$CUSTOM/c13_seed2_fixed5e3.yaml" --plan-only --methods dt1d --seeds 2 --output-root "$OUT/_plans" --data-path "$DATA" --device cuda
+python tools/run_experiment.py "$CUSTOM/t04_fixed5e3.yaml" --plan-only --methods dt1d --seeds 0,1,2 --output-root "$OUT/_plans" --data-path "$DATA" --device cuda
+python tools/run_experiment.py "$CUSTOM/c13_seed2_fixed5e3.yaml" --smoke --methods dt1d --seeds 2 --output-root "$OUT/_smoke" --data-path "$DATA" --device cpu
+python tools/run_experiment.py "$CUSTOM/t04_fixed5e3.yaml" --smoke --methods dt1d --seeds 0 --output-root "$OUT/_smoke" --data-path "$DATA" --device cpu
+
+cat > "$OUT/SESSION_PLAN.txt" <<'PLAN'
+1) C13 EuroSAT/MobileNetV3-Small, 25 ep, DT1D seed 2 only, FIXED LR=5e-3.
+2) T04 Flowers102/ResNet-50, 100 ep, DT1D seeds 0/1/2, FIXED LR=5e-3 (no LR sweep).
+PLAN
+
+cat > "$QUEUE" <<EOFQ
+#!/usr/bin/env bash
+set -Eeuo pipefail
+cd "$ROOT"
+python tools/run_experiment.py "$CUSTOM/c13_seed2_fixed5e3.yaml" \
+  --methods dt1d --seeds 2 --data-path "$DATA" --device cuda --output-root "$OUT" --skip-if-complete
+python tools/run_experiment.py "$CUSTOM/t04_fixed5e3.yaml" \
+  --methods dt1d --seeds 0,1,2 --data-path "$DATA" --device cuda --output-root "$OUT" --skip-if-complete
+EOFQ
+chmod +x "$QUEUE"
+run_with_global_cutoff
