@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+
 set -Eeuo pipefail
 W=/kaggle/working; M="$W/FINAL_MERGED"; rm -rf "$M" "$W/merge-dt1d" "$W/merge-vit"; mkdir -p "$M/extracted" "$M/cnn_raw" "$M/dense_raw" "$M/vit_csv" "$M/final_tables" "$M/final_figures"
 python - <<'PYEX'
